@@ -79,6 +79,16 @@ async function isFreighterAvailableAsync(): Promise<boolean> {
  *  3. Legacy window.freighter fallback as last resort
  */
 async function connectFreighter(): Promise<string> {
+  // Ensure the extension is actually present before triggering a popup.
+  // This avoids showing the Freighter popup when the extension isn't installed
+  // (common in browsers where the user removed/disabled the extension).
+  const present = await isFreighterAvailableAsync();
+  if (!present) {
+    throw new Error(
+      'Freighter extension not detected. Please install/enable Freighter and try again (click the Freighter icon in your toolbar before connecting).'
+    );
+  }
+
   // ── Step 1: requestAccess() via @stellar/freighter-api ──
   try {
     logger.info('[Freighter] Calling requestAccess()...');
