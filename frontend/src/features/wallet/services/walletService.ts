@@ -42,7 +42,9 @@ async function isFreighterAvailableAsync(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
   try {
     const res = await isFreighterConnected();
-    if (res || typeof res === 'object') return true;
+    if (res === true || (typeof res === 'object' && (res as any).isConnected === true) || (typeof res === 'object' && !(res as any).error)) {
+      return true;
+    }
   } catch (err: any) {
     logger.debug('@stellar/freighter-api isConnected check error or pending', { error: err?.message });
   }
@@ -50,40 +52,11 @@ async function isFreighterAvailableAsync(): Promise<boolean> {
 }
 
 /**
- * Connect to Freighter wallet using official @stellar/freighter-api and fallback polling
+ * Connect to Freighter wallet using official @stellar/freighter-api
  */
 async function connectFreighter(): Promise<string> {
-  let available = isFreighterAvailable();
-  if (!available) {
-    try {
-      const res = await isFreighterConnected();
-      if (res || typeof res === 'object') available = true;
-    } catch {}
-  }
-
-  // If not immediately ready, poll up to 2 seconds for extension initialization
-  if (!available) {
-    for (let i = 0; i < 20; i++) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isFreighterAvailable()) {
-        available = true;
-        break;
-      }
-      try {
-        const res = await isFreighterConnected();
-        if (res || typeof res === 'object') {
-          available = true;
-          break;
-        }
-      } catch {}
-    }
-  }
-
-  if (!available) {
-    throw new Error('Freighter wallet extension not detected. Please ensure the Freighter extension is installed and active.');
-  }
-
-  // 1. Try official @stellar/freighter-api requestAccess()
+  // 1. Directly attempt official @stellar/freighter-api requestAccess() on click!
+  // This triggers the official Freighter authorization window in your browser.
   try {
     logger.info('Requesting access via official @stellar/freighter-api...');
     const accessResult = await requestFreighterAccess();
@@ -91,21 +64,31 @@ async function connectFreighter(): Promise<string> {
       logger.info('Connected to Freighter (requestAccess string)', { address: accessResult });
       return accessResult;
     }
-    if (accessResult && typeof accessResult === 'object' && 'address' in accessResult && accessResult.address) {
-      logger.info('Connected to Freighter (requestAccess object)', { address: accessResult.address });
-      return accessResult.address;
-    }
-    if (accessResult && typeof accessResult === 'object' && 'error' in accessResult) {
-      if (String((accessResult as any).error).toLowerCase().includes('reject')) {
-        throw new Error('Wallet connection was rejected in Freighter.');
+    if (accessResult && typeof accessResult === 'object') {
+      if ('address' in accessResult && (accessResult as any).address) {
+        logger.info('Connected to Freighter (requestAccess object)', { address: (accessResult as any).address });
+        return (accessResult as any).address;
+      }
+      if ('error' in accessResult && (accessResult as any).error) {
+        const errorStr = String((accessResult as any).error);
+        if (errorStr.toLowerCase().includes('reject') || errorStr.toLowerCase().includes('cancel') || errorStr.toLowerCase().includes('deni')) {
+          throw new Error('Wallet connection was cancelled inside your Freighter popup.');
+        }
+        if (errorStr.toLowerCase().includes('not installed') || errorStr.toLowerCase().includes('not found')) {
+          throw new Error('Freighter wallet extension not detected. Please install from https://www.freighter.app and try again.');
+        }
+        throw new Error(`Freighter connection error: ${errorStr}`);
       }
     }
   } catch (err: any) {
     const msg = String(err?.message || err || '');
-    logger.warn('freighter.requestAccess() threw or rejected', { error: msg });
-    if (msg.toLowerCase().includes('reject') || msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('deni')) {
-      throw new Error('Wallet connection was rejected inside your Freighter popup.');
+    if (msg.includes('cancelled inside your Freighter popup') || msg.includes('Freighter connection error:') || msg.includes('Freighter wallet extension not detected')) {
+      throw err;
     }
+    if (msg.toLowerCase().includes('reject') || msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('deni')) {
+      throw new Error('Wallet connection was cancelled inside your Freighter popup.');
+    }
+    logger.warn('requestAccess() threw unexpected error, trying fallback methods...', { error: msg });
   }
 
   // 2. Try official @stellar/freighter-api getAddress()
@@ -116,9 +99,9 @@ async function connectFreighter(): Promise<string> {
       logger.info('Connected to Freighter (getAddress string)', { address: addressResult });
       return addressResult;
     }
-    if (addressResult && typeof addressResult === 'object' && 'address' in addressResult && addressResult.address) {
-      logger.info('Connected to Freighter (getAddress object)', { address: addressResult.address });
-      return addressResult.address;
+    if (addressResult && typeof addressResult === 'object' && 'address' in addressResult && (addressResult as any).address) {
+      logger.info('Connected to Freighter (getAddress object)', { address: (addressResult as any).address });
+      return (addressResult as any).address;
     }
   } catch (err: any) {
     logger.warn('getAddress() failed', { error: err?.message });
@@ -127,6 +110,13 @@ async function connectFreighter(): Promise<string> {
   // 3. Fallback to legacy window API methods if present
   const freighter = getFreighter();
   if (freighter) {
+    if (typeof freighter.requestAccess === 'function') {
+      try {
+        const res = await freighter.requestAccess();
+        if (typeof res === 'string' && res.startsWith('G')) return res;
+        if (res?.address) return res.address;
+      } catch {}
+    }
     if (typeof freighter.setAllowed === 'function') {
       try { await freighter.setAllowed(); } catch {}
     }
@@ -139,7 +129,7 @@ async function connectFreighter(): Promise<string> {
     }
   }
 
-  throw new Error('Could not retrieve account address from Freighter. Please unlock your Freighter wallet popup and try again.');
+  throw new Error('Could not connect to Freighter. Please click the Freighter icon in your browser toolbar, unlock your wallet, and click Connect again.');
 }
 
 /**
