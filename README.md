@@ -280,6 +280,15 @@ Key practices:
 
 ---
 
+## 🌐 Live Cloudflare Pages Demo
+
+> **Production Frontend Deployment**
+>
+> The RoyaltyFlow Next.js 15 frontend is statically exported and globally deployed via Cloudflare Pages CDN:
+> **Live Demo URL:** [https://royalty-flow.pages.dev](https://royalty-flow.pages.dev)
+
+---
+
 ## 📸 Screenshots
 
 The following screenshots demonstrate the end-to-end royalty distribution workflow on Stellar Testnet:
