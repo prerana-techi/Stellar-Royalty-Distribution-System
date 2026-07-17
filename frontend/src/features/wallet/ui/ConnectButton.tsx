@@ -1,10 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useWallet } from '../hooks/useWallet';
 import { shortenAddress } from '@/shared/lib/stellar';
 import { Wallet, ChevronDown, LogOut, Copy, ExternalLink, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
+
+/**
+ * Renders wallet name via ref to bypass adblocker cosmetic filters
+ * that match and hide elements containing crypto wallet names like "Freighter".
+ */
+function WalletLabel({ text }: { text: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.textContent = text;
+  }, [text]);
+  return <p ref={ref} className="font-semibold text-sm text-foreground" />;
+}
+
+function WalletLinkText({ text }: { text: string }) {
+  const ref = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.textContent = text;
+  }, [text]);
+  return (
+    <a
+      ref={ref}
+      href="https://www.freighter.app"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-primary hover:underline font-medium"
+    />
+  );
+}
 
 export function ConnectButton() {
   const { address, isConnected, isConnecting, walletName, connect, disconnect, availableWallets, error } = useWallet();
@@ -12,7 +40,7 @@ export function ConnectButton() {
   const [showWalletSelect, setShowWalletSelect] = useState(false);
   const [availabilityMap, setAvailabilityMap] = useState<Record<string, boolean>>({});
 
-  // Periodically re-check availability while modal is open (handles both synchronous and async postMessage checks like @stellar/freighter-api)
+  // Periodically re-check availability while modal is open
   useEffect(() => {
     if (!showWalletSelect) return;
     let cancelled = false;
@@ -145,27 +173,26 @@ export function ConnectButton() {
               </button>
             </div>
 
-            <div className="space-y-3">
-              {availableWallets.map((wallet) => {
-                // Always treat Freighter as available so users can click it to trigger requestAccess
+            <div className="wallet-options-list">
+              {availableWallets.map((wallet, idx) => {
                 const available = wallet.id === 'freighter' ? true : (availabilityMap[wallet.id] ?? wallet.isAvailable());
-                console.log('Rendering wallet:', wallet.name, 'available:', available);
                 return (
                   <div
-                    key={wallet.id}
-                    className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/20 transition-all group cursor-pointer"
+                    key={idx}
+                    className="wallet-option-item flex items-center justify-between gap-3 p-3.5 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/20 transition-all group cursor-pointer mb-3"
+                    style={{ display: 'flex', visibility: 'visible', opacity: 1 }}
                     onClick={() => {
                       connect(wallet.id);
                       setShowWalletSelect(false);
                     }}
-                    id={`wallet-option-${wallet.id}`}
+                    data-idx={idx}
                   >
                     <div className="flex items-center gap-3.5">
                       <span className="text-2xl p-2 rounded-lg bg-white/5 group-hover:scale-110 transition-transform flex items-center justify-center">
                         {wallet.icon}
                       </span>
                       <div>
-                        <p className="font-semibold text-sm text-foreground">{wallet.name}</p>
+                        <WalletLabel text={wallet.name} />
                         <p className={`text-xs mt-0.5 flex items-center gap-1.5 ${available ? 'text-emerald-400 font-medium' : 'text-muted-foreground'}`}>
                           {available && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
                           {available ? 'Available' : 'Not installed'}
@@ -185,34 +212,17 @@ export function ConnectButton() {
             <div className="mt-5 pt-4 border-t border-white/10 text-center">
               <p className="text-xs text-muted-foreground">
                 New to Stellar?{' '}
-                <a
-                  href="https://www.freighter.app"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline font-medium"
-                >
-                  Download Freighter Wallet
-                </a>
+                <WalletLinkText text="Download Freighter Wallet" />
               </p>
             </div>
             {error && /freighter/i.test(error) && (
               <div className="mt-4 p-3 rounded-lg bg-yellow-700/10 border border-yellow-500/10 text-sm text-yellow-300">
-                <p className="font-semibold">Troubleshooting Freighter</p>
+                <p className="font-semibold">Troubleshooting</p>
                 <ol className="mt-1 list-decimal list-inside text-xs text-muted-foreground">
-                  <li>Ensure the Freighter extension is installed and enabled in your browser.</li>
-                  <li>Make sure you are logged in to Freighter and unlocked.</li>
-                  <li>Click the Freighter icon in the browser toolbar, then retry connecting here.</li>
+                  <li>Ensure the wallet extension is installed and enabled in your browser.</li>
+                  <li>Make sure you are logged in and unlocked.</li>
+                  <li>Click the wallet icon in the browser toolbar, then retry connecting here.</li>
                 </ol>
-                <div className="mt-2">
-                  <a
-                    href="https://support.freighter.app/hc/en-us"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Freighter Troubleshooting Guide
-                  </a>
-                </div>
               </div>
             )}
           </div>

@@ -139,3 +139,20 @@ body::before {
   pointer-events: none;
   z-index: -1;
 }
+
+/* Force wallet list items to be visible (override adblocker cosmetic filters) */
+.space-y-3 > div[data-idx] {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  overflow: visible !important;
+  position: relative !important;
+  clip: auto !important;
+  clip-path: none !important;
+  max-height: none !important;
+  width: auto !important;
+  min-height: 0 !important;
+  transform: none !important;
+  pointer-events: auto !important;
+}
