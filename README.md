@@ -314,7 +314,7 @@ Key practices:
 │   │   └── src/
 │   │       ├── lib.rs            # Main contract + cross-contract calls
 │   │       ├── types.rs          # Data structures
-│   │       ├── errors.rs         # Custom errors
+│   │       ├── errors.rs          # Custom errors
 │   │       ├── events.rs         # Event emission
 │   │       ├── storage.rs        # Storage helpers
 │   │       └── test.rs           # Integration tests
@@ -333,6 +333,8 @@ Key practices:
 ├── .github/workflows/            # CI/CD
 └── .env.example                  # Environment template
 ```
+
+For more detailed module documentation, see `contracts/README.md` and `frontend/README.md`.
 
 ---
 

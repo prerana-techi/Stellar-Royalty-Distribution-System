@@ -39,7 +39,7 @@ export async function buildContractTransaction({
  */
 export async function submitTransaction(
   signedXdr: string
-): Promise<StellarSdk.SorobanRpc.Api.GetTransactionResponse> {
+): Promise<StellarSdk.rpc.Api.GetTransactionResponse> {
   const tx = StellarSdk.TransactionBuilder.fromXDR(
     signedXdr,
     NETWORK_PASSPHRASE
@@ -52,7 +52,7 @@ export async function submitTransaction(
   }
 
   // Poll for completion
-  let getResponse: StellarSdk.SorobanRpc.Api.GetTransactionResponse;
+  let getResponse: StellarSdk.rpc.Api.GetTransactionResponse;
   let attempts = 0;
   const maxAttempts = 30;
 
@@ -61,11 +61,11 @@ export async function submitTransaction(
     getResponse = await server.getTransaction(response.hash);
     attempts++;
   } while (
-    getResponse.status === StellarSdk.SorobanRpc.Api.GetTransactionStatus.NOT_FOUND &&
+    getResponse.status === StellarSdk.rpc.Api.GetTransactionStatus.NOT_FOUND &&
     attempts < maxAttempts
   );
 
-  if (getResponse.status === StellarSdk.SorobanRpc.Api.GetTransactionStatus.SUCCESS) {
+  if (getResponse.status === StellarSdk.rpc.Api.GetTransactionStatus.SUCCESS) {
     return getResponse;
   }
 

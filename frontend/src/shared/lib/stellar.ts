@@ -11,7 +11,7 @@ export const REGISTRY_CONTRACT_ID = process.env.NEXT_PUBLIC_ROYALTY_REGISTRY_CON
 export const DISTRIBUTOR_CONTRACT_ID = process.env.NEXT_PUBLIC_PAYMENT_DISTRIBUTOR_CONTRACT_ID || '';
 export const NATIVE_TOKEN_ID = process.env.NEXT_PUBLIC_NATIVE_TOKEN_CONTRACT_ID || 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
 
-export const server = new StellarSdk.SorobanRpc.Server(RPC_URL);
+export const server = new StellarSdk.rpc.Server(RPC_URL);
 
 export function getExplorerTxUrl(txHash: string): string {
   return `${EXPLORER_URL}/tx/${txHash}`;

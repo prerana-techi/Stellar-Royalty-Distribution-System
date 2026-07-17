@@ -13,40 +13,85 @@ interface WalletProvider {
 }
 
 /**
+ * Get Freighter extension API object (supports both v5+ window.freighter and legacy window.freighterApi)
+ */
+function getFreighter(): any {
+  if (typeof window === 'undefined') return null;
+  return (window as any).freighter || (window as any).freighterApi || null;
+}
+
+/**
  * Check if Freighter wallet extension is available
  */
 function isFreighterAvailable(): boolean {
-  return typeof window !== 'undefined' && !!(window as any).freighterApi;
+  return !!getFreighter();
 }
 
 /**
  * Connect to Freighter wallet
  */
 async function connectFreighter(): Promise<string> {
-  const freighter = (window as any).freighterApi;
-  if (!freighter) throw new Error('Freighter wallet not found. Please install the extension.');
+  const freighter = getFreighter();
+  if (!freighter) {
+    throw new Error('Freighter wallet not found. Please install or enable the browser extension.');
+  }
 
-  await freighter.setAllowed();
-  const { address } = await freighter.getAddress();
-  if (!address) throw new Error('No address returned from Freighter');
+  // Try modern Freighter API (v5+) first: requestAccess()
+  try {
+    if (typeof freighter.requestAccess === 'function') {
+      const res = await freighter.requestAccess();
+      if (typeof res === 'string' && res.startsWith('G')) {
+        logger.info('Connected to Freighter (requestAccess string)', { address: res });
+        return res;
+      }
+      if (res && typeof res === 'object' && res.address) {
+        logger.info('Connected to Freighter (requestAccess object)', { address: res.address });
+        return res.address;
+      }
+    }
+  } catch (err: any) {
+    logger.warn('freighter.requestAccess() failed or rejected, trying fallback...', { error: err?.message });
+    if (err?.message && err.message.toLowerCase().includes('reject')) {
+      throw new Error('Wallet connection was rejected in Freighter.');
+    }
+  }
 
-  logger.info('Connected to Freighter', { address });
-  return address;
+  // Fallback to legacy Freighter API: setAllowed / getAddress
+  if (typeof freighter.setAllowed === 'function') {
+    await freighter.setAllowed();
+  }
+
+  if (typeof freighter.getAddress === 'function') {
+    const res = await freighter.getAddress();
+    if (typeof res === 'string' && res.startsWith('G')) {
+      logger.info('Connected to Freighter (getAddress string)', { address: res });
+      return res;
+    }
+    if (res && typeof res === 'object' && res.address) {
+      logger.info('Connected to Freighter (getAddress object)', { address: res.address });
+      return res.address;
+    }
+  }
+
+  throw new Error('Could not retrieve account address from Freighter. Please unlock your wallet and try again.');
 }
 
 /**
  * Sign transaction with Freighter
  */
 async function signWithFreighter(xdr: string): Promise<string> {
-  const freighter = (window as any).freighterApi;
+  const freighter = getFreighter();
   if (!freighter) throw new Error('Freighter wallet not available');
 
-  const { signedTxXdr } = await freighter.signTransaction(xdr, {
+  const res = await freighter.signTransaction(xdr, {
     networkPassphrase: NETWORK_PASSPHRASE,
     network: NETWORK,
   });
 
-  return signedTxXdr;
+  if (typeof res === 'string') return res;
+  if (res && typeof res === 'object' && res.signedTxXdr) return res.signedTxXdr;
+
+  throw new Error('Invalid signature response from Freighter');
 }
 
 export const WALLET_PROVIDERS: WalletProvider[] = [
@@ -80,7 +125,6 @@ export const WALLET_PROVIDERS: WalletProvider[] = [
     icon: '🌟',
     isAvailable: () => true, // Web-based, always available
     connect: async () => {
-      const albedo = await import('/* dynamic */').catch(() => null);
       // Albedo uses web-based popup — simulate for demo
       throw new Error('Albedo integration requires the albedo-link package. Install it for production use.');
     },
