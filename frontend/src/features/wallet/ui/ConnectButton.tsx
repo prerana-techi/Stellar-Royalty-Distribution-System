@@ -147,7 +147,8 @@ export function ConnectButton() {
 
             <div className="space-y-3">
               {availableWallets.map((wallet) => {
-                const available = availabilityMap[wallet.id] ?? wallet.isAvailable();
+                // Always treat Freighter as available so users can click it to trigger requestAccess
+                const available = wallet.id === 'freighter' ? true : (availabilityMap[wallet.id] ?? wallet.isAvailable());
                 return (
                   <div
                     key={wallet.id}
@@ -171,22 +172,9 @@ export function ConnectButton() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {!available && wallet.id === 'freighter' && (
-                        <a
-                          href="https://www.freighter.app"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-xs px-3 py-1.5 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 font-medium transition-colors flex items-center gap-1"
-                        >
-                          Install <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                      {available && (
-                        <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors font-medium">
-                          Connect &rarr;
-                        </span>
-                      )}
+                      <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors font-medium">
+                        Connect &rarr;
+                      </span>
                     </div>
                   </div>
                 );

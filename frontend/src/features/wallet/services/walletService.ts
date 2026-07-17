@@ -1,10 +1,10 @@
 import { NETWORK_PASSPHRASE, NETWORK } from '@/shared/lib/stellar';
 import { logger } from '@/shared/lib/logger';
 import {
-  isConnected as isFreighterConnected,
-  requestAccess as requestFreighterAccess,
-  getAddress as getFreighterAddress,
-  signTransaction as signFreighterTransaction,
+  isConnected as freighterIsConnected,
+  requestAccess as freighterRequestAccess,
+  getAddress as freighterGetAddress,
+  signTransaction as freighterSignTransaction,
 } from '@stellar/freighter-api';
 
 export type SupportedWallet = 'freighter' | 'xbull' | 'albedo';
@@ -19,160 +19,199 @@ export interface WalletProvider {
   signTransaction: (xdr: string) => Promise<string>;
 }
 
-/**
- * Get Freighter extension API object (supports both v5+ window.freighter and legacy window.freighterApi)
- */
-function getFreighter(): any {
-  if (typeof window === 'undefined') return null;
-  return (window as any).freighter || (window as any).freighterApi || (window as any).Freighter || null;
-}
+// ─────────────────────────────────────────────────────
+// Freighter v6 (@stellar/freighter-api 6.x)
+//
+// API shape from the actual type definitions:
+//   isConnected()    → { isConnected: boolean, error?: FreighterApiError }
+//   requestAccess()  → { address: string,      error?: FreighterApiError }
+//   getAddress()     → { address: string,      error?: FreighterApiError }
+//   signTransaction  → { signedTxXdr: string, signerAddress: string, error?: ... }
+//
+// FreighterApiError is a string message, NOT a JS Error.
+// The extension communicates via window.postMessage, not window.freighter.
+// ─────────────────────────────────────────────────────
 
 /**
- * Synchronous check if Freighter wallet extension is available via global window
+ * Synchronous availability check — looks for legacy window globals.
+ * Modern Freighter v5+ may NOT inject window.freighter at all,
+ * so this can return false even when the extension is present.
  */
-function isFreighterAvailable(): boolean {
+function isFreighterAvailableSync(): boolean {
   if (typeof window === 'undefined') return false;
-  return !!getFreighter();
+  return !!(
+    (window as any).freighter ||
+    (window as any).freighterApi ||
+    (window as any).Freighter
+  );
 }
 
 /**
- * Asynchronous check via official @stellar/freighter-api postMessage protocol
+ * Async availability check via @stellar/freighter-api postMessage.
+ * If the extension is installed, isConnected() will resolve with
+ * { isConnected: true/false } — either way, a response means
+ * the extension exists. An error (timeout / no listener) means
+ * the extension is NOT installed.
  */
 async function isFreighterAvailableAsync(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
+
+  // Quick sync check first
+  if (isFreighterAvailableSync()) return true;
+
   try {
-    const res = await isFreighterConnected();
-    if (res === true || (typeof res === 'object' && (res as any).isConnected === true) || (typeof res === 'object' && !(res as any).error)) {
-      return true;
-    }
-  } catch (err: any) {
-    logger.debug('@stellar/freighter-api isConnected check error or pending', { error: err?.message });
+    const res = await freighterIsConnected();
+    // Any response (even { isConnected: false }) means extension is present
+    if (res && typeof res === 'object') return true;
+    if (typeof res === 'boolean') return true;
+  } catch {
+    // No response = extension not installed
   }
-  return isFreighterAvailable();
+  return false;
 }
 
 /**
- * Connect to Freighter wallet using official @stellar/freighter-api
+ * Connect to Freighter — called when user clicks the Freighter button.
+ *
+ * Strategy:
+ *  1. Call requestAccess() directly (triggers Freighter popup)
+ *  2. If that returns an error, fall back to getAddress()
+ *  3. Legacy window.freighter fallback as last resort
  */
 async function connectFreighter(): Promise<string> {
-  // 1. Directly attempt official @stellar/freighter-api requestAccess() on click!
-  // This triggers the official Freighter authorization window in your browser.
+  // ── Step 1: requestAccess() via @stellar/freighter-api ──
   try {
-    logger.info('Requesting access via official @stellar/freighter-api...');
-    const accessResult = await requestFreighterAccess();
-    if (typeof accessResult === 'string' && accessResult.startsWith('G')) {
-      logger.info('Connected to Freighter (requestAccess string)', { address: accessResult });
-      return accessResult;
+    logger.info('[Freighter] Calling requestAccess()...');
+    const result = await freighterRequestAccess();
+    logger.info('[Freighter] requestAccess() returned:', { result: JSON.stringify(result) });
+
+    // v6 returns { address: string, error?: string }
+    if (result && typeof result === 'object') {
+      if (result.error) {
+        const errMsg = String(result.error);
+        logger.warn('[Freighter] requestAccess returned error field:', { error: errMsg });
+        if (/user declined|reject|cancel|denied/i.test(errMsg)) {
+          throw new Error('You declined the connection request in Freighter.');
+        }
+        // Don't throw yet — try getAddress fallback
+      } else if (result.address && typeof result.address === 'string') {
+        logger.info('[Freighter] Connected via requestAccess', { address: result.address });
+        return result.address;
+      }
     }
-    if (accessResult && typeof accessResult === 'object') {
-      if ('address' in accessResult && (accessResult as any).address) {
-        logger.info('Connected to Freighter (requestAccess object)', { address: (accessResult as any).address });
-        return (accessResult as any).address;
-      }
-      if ('error' in accessResult && (accessResult as any).error) {
-        const errorStr = String((accessResult as any).error);
-        if (errorStr.toLowerCase().includes('reject') || errorStr.toLowerCase().includes('cancel') || errorStr.toLowerCase().includes('deni')) {
-          throw new Error('Wallet connection was cancelled inside your Freighter popup.');
-        }
-        if (errorStr.toLowerCase().includes('not installed') || errorStr.toLowerCase().includes('not found')) {
-          throw new Error('Freighter wallet extension not detected. Please install from https://www.freighter.app and try again.');
-        }
-        throw new Error(`Freighter connection error: ${errorStr}`);
-      }
+
+    // Older API might return a raw string
+    if (typeof result === 'string' && result.startsWith('G')) {
+      logger.info('[Freighter] Connected via requestAccess (string)', { address: result });
+      return result as string;
     }
   } catch (err: any) {
-    const msg = String(err?.message || err || '');
-    if (msg.includes('cancelled inside your Freighter popup') || msg.includes('Freighter connection error:') || msg.includes('Freighter wallet extension not detected')) {
+    const msg = String(err?.message || '');
+    logger.warn('[Freighter] requestAccess() threw:', { error: msg });
+
+    // If user explicitly declined, don't retry
+    if (/declined|reject|cancel|denied/i.test(msg)) {
       throw err;
     }
-    if (msg.toLowerCase().includes('reject') || msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('deni')) {
-      throw new Error('Wallet connection was cancelled inside your Freighter popup.');
-    }
-    logger.warn('requestAccess() threw unexpected error, trying fallback methods...', { error: msg });
+    // Otherwise fall through to getAddress
   }
 
-  // 2. Try official @stellar/freighter-api getAddress()
+  // ── Step 2: getAddress() fallback ──
   try {
-    logger.info('Trying getAddress via official @stellar/freighter-api...');
-    const addressResult = await getFreighterAddress();
-    if (typeof addressResult === 'string' && addressResult.startsWith('G')) {
-      logger.info('Connected to Freighter (getAddress string)', { address: addressResult });
-      return addressResult;
+    logger.info('[Freighter] Trying getAddress()...');
+    const result = await freighterGetAddress();
+    logger.info('[Freighter] getAddress() returned:', { result: JSON.stringify(result) });
+
+    if (result && typeof result === 'object') {
+      if (result.error) {
+        const errMsg = String(result.error);
+        logger.warn('[Freighter] getAddress returned error:', { error: errMsg });
+      } else if (result.address && typeof result.address === 'string') {
+        logger.info('[Freighter] Connected via getAddress', { address: result.address });
+        return result.address;
+      }
     }
-    if (addressResult && typeof addressResult === 'object' && 'address' in addressResult && (addressResult as any).address) {
-      logger.info('Connected to Freighter (getAddress object)', { address: (addressResult as any).address });
-      return (addressResult as any).address;
+
+    if (typeof result === 'string' && result.startsWith('G')) {
+      return result as string;
     }
   } catch (err: any) {
-    logger.warn('getAddress() failed', { error: err?.message });
+    logger.warn('[Freighter] getAddress() threw:', { error: err?.message });
   }
 
-  // 3. Fallback to legacy window API methods if present
-  const freighter = getFreighter();
-  if (freighter) {
-    if (typeof freighter.requestAccess === 'function') {
-      try {
-        const res = await freighter.requestAccess();
+  // ── Step 3: Legacy window.freighter fallback ──
+  const freighterGlobal = (typeof window !== 'undefined')
+    ? (window as any).freighter || (window as any).freighterApi
+    : null;
+
+  if (freighterGlobal) {
+    logger.info('[Freighter] Trying legacy window.freighter API...');
+    try {
+      if (typeof freighterGlobal.requestAccess === 'function') {
+        const res = await freighterGlobal.requestAccess();
         if (typeof res === 'string' && res.startsWith('G')) return res;
         if (res?.address) return res.address;
-      } catch {}
-    }
-    if (typeof freighter.setAllowed === 'function') {
-      try { await freighter.setAllowed(); } catch {}
-    }
-    if (typeof freighter.getAddress === 'function') {
-      try {
-        const res = await freighter.getAddress();
+      }
+    } catch {}
+
+    try {
+      if (typeof freighterGlobal.setAllowed === 'function') {
+        await freighterGlobal.setAllowed();
+      }
+      if (typeof freighterGlobal.getAddress === 'function') {
+        const res = await freighterGlobal.getAddress();
         if (typeof res === 'string' && res.startsWith('G')) return res;
         if (res?.address) return res.address;
-      } catch {}
-    }
+      }
+    } catch {}
   }
 
-  throw new Error('Could not connect to Freighter. Please click the Freighter icon in your browser toolbar, unlock your wallet, and click Connect again.');
+  throw new Error(
+    'Could not connect to Freighter. Please make sure:\n' +
+    '1. Freighter extension is installed and enabled\n' +
+    '2. You are logged in to Freighter\n' +
+    '3. Try clicking the Freighter icon in your toolbar first, then click Connect here'
+  );
 }
 
 /**
- * Sign transaction with Freighter using official @stellar/freighter-api
+ * Sign a transaction XDR with Freighter
  */
 async function signWithFreighter(xdr: string): Promise<string> {
   try {
-    const res = await signFreighterTransaction(xdr, {
+    const result = await freighterSignTransaction(xdr, {
       networkPassphrase: NETWORK_PASSPHRASE,
-      network: NETWORK,
+      address: undefined,
     });
-    if (typeof res === 'string') return res;
-    if (res && typeof res === 'object' && 'signedTxXdr' in res && (res as any).signedTxXdr) {
-      return (res as any).signedTxXdr;
+
+    if (result && typeof result === 'object') {
+      if (result.error) {
+        throw new Error(String(result.error));
+      }
+      if (result.signedTxXdr) {
+        return result.signedTxXdr;
+      }
     }
-    if (res && typeof res === 'object' && 'signedXDR' in res && (res as any).signedXDR) {
-      return (res as any).signedXDR;
-    }
+
+    if (typeof result === 'string') return result;
   } catch (err: any) {
-    logger.error('signTransaction failed', { error: err?.message });
-    throw new Error(err?.message || 'Transaction signing was rejected in Freighter.');
+    logger.error('[Freighter] signTransaction failed:', { error: err?.message });
+    throw new Error(err?.message || 'Transaction signing failed in Freighter.');
   }
 
-  // Fallback check on global object
-  const freighter = getFreighter();
-  if (freighter && typeof freighter.signTransaction === 'function') {
-    const res = await freighter.signTransaction(xdr, {
-      networkPassphrase: NETWORK_PASSPHRASE,
-      network: NETWORK,
-    });
-    if (typeof res === 'string') return res;
-    if (res?.signedTxXdr) return res.signedTxXdr;
-  }
-
-  throw new Error('Invalid signature response from Freighter');
+  throw new Error('Unexpected response from Freighter signTransaction');
 }
+
+// ─────────────────────────────────────────────────────
+// Wallet provider registry
+// ─────────────────────────────────────────────────────
 
 export const WALLET_PROVIDERS: WalletProvider[] = [
   {
     name: 'Freighter',
     id: 'freighter',
     icon: '🦊',
-    isAvailable: isFreighterAvailable,
+    isAvailable: isFreighterAvailableSync,
     isAvailableAsync: isFreighterAvailableAsync,
     connect: connectFreighter,
     signTransaction: signWithFreighter,
@@ -202,7 +241,7 @@ export const WALLET_PROVIDERS: WalletProvider[] = [
       // Albedo uses web-based popup — simulate for demo
       throw new Error('Albedo integration requires the albedo-link package. Install it for production use.');
     },
-    signTransaction: async (xdr: string) => {
+    signTransaction: async () => {
       throw new Error('Albedo signing not configured');
     },
   },

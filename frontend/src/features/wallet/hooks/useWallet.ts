@@ -19,17 +19,19 @@ export function useWallet() {
         throw new Error(`Wallet "${walletId}" is not supported`);
       }
 
-      let available = provider.isAvailable();
-      if (!available && provider.isAvailableAsync) {
-        try {
-          available = await provider.isAvailableAsync();
-        } catch {}
-      }
-
-      if (!available && walletId !== 'freighter') {
-        throw new Error(
-          `${provider.name} wallet is not installed. Please install the browser extension and try again.`
-        );
+      // For Freighter, skip availability gate — connectFreighter() handles it directly
+      if (walletId !== 'freighter') {
+        let available = provider.isAvailable();
+        if (!available && provider.isAvailableAsync) {
+          try {
+            available = await provider.isAvailableAsync();
+          } catch {}
+        }
+        if (!available) {
+          throw new Error(
+            `${provider.name} wallet is not installed. Please install the browser extension and try again.`
+          );
+        }
       }
 
       const address = await provider.connect();
@@ -42,6 +44,8 @@ export function useWallet() {
       logger.error('Wallet connection failed', { walletId, error: message });
       store.setError(message);
       toast.error('Connection Failed', { description: message });
+    } finally {
+      store.setConnecting(false);
     }
   }, [store]);
 
