@@ -280,12 +280,13 @@ Key practices:
 
 ---
 
-## 🌐 Live Cloudflare Pages Demo
+## 🌐 Live Demo
 
-> **Production Frontend Deployment**
+> **Production Frontend Deployments**
 >
-> The RoyaltyFlow Next.js 15 frontend is statically exported and globally deployed via Cloudflare Pages CDN:
-> **Live Demo URL:** [https://royalty-flow.pages.dev](https://royalty-flow.pages.dev)
+> The RoyaltyFlow Next.js frontend is deployed on two CDN platforms:
+> - **Vercel:** [https://frontend-psi-three-vnt6o1v3cz.vercel.app](https://frontend-psi-three-vnt6o1v3cz.vercel.app)
+> - **Cloudflare Pages:** [https://royalty-flow.pages.dev](https://royalty-flow.pages.dev)
 
 ---
 
