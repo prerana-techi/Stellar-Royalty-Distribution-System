@@ -33,16 +33,29 @@ export interface WalletProvider {
 // ─────────────────────────────────────────────────────
 
 /**
- * Synchronous availability check — looks for legacy window globals.
- * Modern Freighter v5+ may NOT inject window.freighter at all,
- * so this can return false even when the extension is present.
+ * Race a promise against a timeout. If the promise doesn't resolve
+ * within `ms` milliseconds, resolve with `fallback` instead.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
+/**
+ * Synchronous availability check — looks for browser globals.
+ * Modern Freighter v6+ may use window.stellar (SEP-43) instead of
+ * window.freighter, so we check both. This can still return false
+ * even when the extension is present (postMessage-only mode).
  */
 function isFreighterAvailableSync(): boolean {
   if (typeof window === 'undefined') return false;
   return !!(
     (window as any).freighter ||
     (window as any).freighterApi ||
-    (window as any).Freighter
+    (window as any).Freighter ||
+    (window as any).stellar
   );
 }
 
@@ -50,8 +63,8 @@ function isFreighterAvailableSync(): boolean {
  * Async availability check via @stellar/freighter-api postMessage.
  * If the extension is installed, isConnected() will resolve with
  * { isConnected: true/false } — either way, a response means
- * the extension exists. An error (timeout / no listener) means
- * the extension is NOT installed.
+ * the extension exists. We use a 3-second timeout so the UI
+ * doesn't hang indefinitely when the extension is not installed.
  */
 async function isFreighterAvailableAsync(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
@@ -60,7 +73,13 @@ async function isFreighterAvailableAsync(): Promise<boolean> {
   if (isFreighterAvailableSync()) return true;
 
   try {
-    const res = await freighterIsConnected();
+    // Wrap in a timeout — freighterIsConnected() uses postMessage
+    // which can hang forever if the extension is not present
+    const res = await withTimeout(freighterIsConnected(), 3000, null);
+    if (res === null) {
+      logger.info('[Freighter] isConnected() timed out — extension likely not installed');
+      return false;
+    }
     // Any response (even { isConnected: false }) means extension is present
     if (res && typeof res === 'object') return true;
     if (typeof res === 'boolean') return true;
@@ -74,46 +93,50 @@ async function isFreighterAvailableAsync(): Promise<boolean> {
  * Connect to Freighter — called when user clicks the Freighter button.
  *
  * Strategy:
- *  1. Call requestAccess() directly (triggers Freighter popup)
+ *  1. Call requestAccess() directly (triggers Freighter popup).
+ *     We skip the availability pre-check because:
+ *     - The isConnected() postMessage can be unreliable/slow
+ *     - requestAccess() itself will fail clearly if the extension is absent
+ *     - If the extension IS installed, requesting access is the right action
  *  2. If that returns an error, fall back to getAddress()
  *  3. Legacy window.freighter fallback as last resort
  */
 async function connectFreighter(): Promise<string> {
-  // Ensure the extension is actually present before triggering a popup.
-  // This avoids showing the Freighter popup when the extension isn't installed
-  // (common in browsers where the user removed/disabled the extension).
-  const present = await isFreighterAvailableAsync();
-  if (!present) {
-    throw new Error(
-      'Freighter extension not detected. Please install/enable Freighter and try again (click the Freighter icon in your toolbar before connecting).'
-    );
-  }
-
   // ── Step 1: requestAccess() via @stellar/freighter-api ──
   try {
     logger.info('[Freighter] Calling requestAccess()...');
-    const result = await freighterRequestAccess();
-    logger.info('[Freighter] requestAccess() returned:', { result: JSON.stringify(result) });
+    const result = await withTimeout(
+      freighterRequestAccess(),
+      15000,
+      null
+    );
 
-    // v6 returns { address: string, error?: string }
-    if (result && typeof result === 'object') {
-      if (result.error) {
-        const errMsg = String(result.error);
-        logger.warn('[Freighter] requestAccess returned error field:', { error: errMsg });
-        if (/user declined|reject|cancel|denied/i.test(errMsg)) {
-          throw new Error('You declined the connection request in Freighter.');
+    if (result === null) {
+      logger.warn('[Freighter] requestAccess() timed out');
+      // Fall through to getAddress
+    } else {
+      logger.info('[Freighter] requestAccess() returned:', { result: JSON.stringify(result) });
+
+      // v6 returns { address: string, error?: string }
+      if (result && typeof result === 'object') {
+        if (result.error) {
+          const errMsg = String(result.error);
+          logger.warn('[Freighter] requestAccess returned error field:', { error: errMsg });
+          if (/user declined|reject|cancel|denied/i.test(errMsg)) {
+            throw new Error('You declined the connection request in Freighter.');
+          }
+          // Don't throw yet — try getAddress fallback
+        } else if (result.address && typeof result.address === 'string') {
+          logger.info('[Freighter] Connected via requestAccess', { address: result.address });
+          return result.address;
         }
-        // Don't throw yet — try getAddress fallback
-      } else if (result.address && typeof result.address === 'string') {
-        logger.info('[Freighter] Connected via requestAccess', { address: result.address });
-        return result.address;
       }
-    }
 
-    // Older API might return a raw string
-    if (typeof result === 'string' && result.startsWith('G')) {
-      logger.info('[Freighter] Connected via requestAccess (string)', { address: result });
-      return result as string;
+      // Older API might return a raw string
+      if (typeof result === 'string' && result.startsWith('G')) {
+        logger.info('[Freighter] Connected via requestAccess (string)', { address: result });
+        return result as string;
+      }
     }
   } catch (err: any) {
     const msg = String(err?.message || '');
@@ -129,33 +152,38 @@ async function connectFreighter(): Promise<string> {
   // ── Step 2: getAddress() fallback ──
   try {
     logger.info('[Freighter] Trying getAddress()...');
-    const result = await freighterGetAddress();
-    logger.info('[Freighter] getAddress() returned:', { result: JSON.stringify(result) });
+    const result = await withTimeout(freighterGetAddress(), 10000, null);
 
-    if (result && typeof result === 'object') {
-      if (result.error) {
-        const errMsg = String(result.error);
-        logger.warn('[Freighter] getAddress returned error:', { error: errMsg });
-      } else if (result.address && typeof result.address === 'string') {
-        logger.info('[Freighter] Connected via getAddress', { address: result.address });
-        return result.address;
+    if (result === null) {
+      logger.warn('[Freighter] getAddress() timed out');
+    } else {
+      logger.info('[Freighter] getAddress() returned:', { result: JSON.stringify(result) });
+
+      if (result && typeof result === 'object') {
+        if (result.error) {
+          const errMsg = String(result.error);
+          logger.warn('[Freighter] getAddress returned error:', { error: errMsg });
+        } else if (result.address && typeof result.address === 'string') {
+          logger.info('[Freighter] Connected via getAddress', { address: result.address });
+          return result.address;
+        }
       }
-    }
 
-    if (typeof result === 'string' && result.startsWith('G')) {
-      return result as string;
+      if (typeof result === 'string' && result.startsWith('G')) {
+        return result as string;
+      }
     }
   } catch (err: any) {
     logger.warn('[Freighter] getAddress() threw:', { error: err?.message });
   }
 
-  // ── Step 3: Legacy window.freighter fallback ──
+  // ── Step 3: Legacy window.freighter / window.stellar fallback ──
   const freighterGlobal = (typeof window !== 'undefined')
-    ? (window as any).freighter || (window as any).freighterApi
+    ? (window as any).freighter || (window as any).freighterApi || (window as any).stellar
     : null;
 
   if (freighterGlobal) {
-    logger.info('[Freighter] Trying legacy window.freighter API...');
+    logger.info('[Freighter] Trying legacy window global API...');
     try {
       if (typeof freighterGlobal.requestAccess === 'function') {
         const res = await freighterGlobal.requestAccess();

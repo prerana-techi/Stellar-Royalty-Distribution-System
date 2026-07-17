@@ -149,6 +149,7 @@ export function ConnectButton() {
               {availableWallets.map((wallet) => {
                 // Always treat Freighter as available so users can click it to trigger requestAccess
                 const available = wallet.id === 'freighter' ? true : (availabilityMap[wallet.id] ?? wallet.isAvailable());
+                console.log('Rendering wallet:', wallet.name, 'available:', available);
                 return (
                   <div
                     key={wallet.id}
@@ -157,7 +158,7 @@ export function ConnectButton() {
                       connect(wallet.id);
                       setShowWalletSelect(false);
                     }}
-                    id={`connect-${wallet.id}`}
+                    id={`wallet-option-${wallet.id}`}
                   >
                     <div className="flex items-center gap-3.5">
                       <span className="text-2xl p-2 rounded-lg bg-white/5 group-hover:scale-110 transition-transform flex items-center justify-center">
