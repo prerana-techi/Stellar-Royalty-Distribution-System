@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, Env, Symbol, symbol_short};
+use soroban_sdk::{Address, Env, Symbol};
 
 pub struct RegistryEvents;
 

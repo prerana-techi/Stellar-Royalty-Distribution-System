@@ -1,0 +1,13 @@
+{
+  "network": "testnet",
+  "deployer": "GDBSZOBZT6WJ2ED6R56EZNV4MJMKH5YFE5QLBVEMC5V7IEDP4AV7CD6S",
+  "contracts": {
+    "royalty_registry": "CCYC4OZFAQ63A6JNMZOT4HMPSEUA7L4DKHH7SCOYM2T6RSBF2TCBEVVD",
+    "payment_distributor": "CD6WDVR26QLJ5URJFLOQND4RDSZCF2EJMJJZEO6C3VLAIEOZRUWEIKHT"
+  },
+  "deployed_at": "2026-07-17T10:10:45Z",
+  "explorer": {
+    "registry": "https://stellar.expert/explorer/testnet/contract/CCYC4OZFAQ63A6JNMZOT4HMPSEUA7L4DKHH7SCOYM2T6RSBF2TCBEVVD",
+    "distributor": "https://stellar.expert/explorer/testnet/contract/CD6WDVR26QLJ5URJFLOQND4RDSZCF2EJMJJZEO6C3VLAIEOZRUWEIKHT"
+  }
+}

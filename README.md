@@ -268,33 +268,39 @@ Key practices:
 
 > **Testnet Deployment**
 >
-> After running `./scripts/deploy-testnet.sh`, update these with actual values:
+> Successfully deployed to Stellar Testnet using Soroban SDK v22:
 
 | Contract | Address | Explorer |
 |---|---|---|
-| RoyaltyRegistry | `<DEPLOY_AND_PASTE_HERE>` | [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/<ADDRESS>) |
-| PaymentDistributor | `<DEPLOY_AND_PASTE_HERE>` | [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/<ADDRESS>) |
+| RoyaltyRegistry | `CCYC4OZFAQ63A6JNMZOT4HMPSEUA7L4DKHH7SCOYM2T6RSBF2TCBEVVD` | [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CCYC4OZFAQ63A6JNMZOT4HMPSEUA7L4DKHH7SCOYM2T6RSBF2TCBEVVD) |
+| PaymentDistributor | `CD6WDVR26QLJ5URJFLOQND4RDSZCF2EJMJJZEO6C3VLAIEOZRUWEIKHT` | [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CD6WDVR26QLJ5URJFLOQND4RDSZCF2EJMJJZEO6C3VLAIEOZRUWEIKHT) |
 
-**Sample Transaction Hash:** `<PASTE_TX_HASH_AFTER_DEPLOYMENT>`
-[View on Explorer](https://stellar.expert/explorer/testnet/tx/<PASTE_TX_HASH>)
+**Sample Distribution Transaction Hash:** `588b12608cca3957b25425bf0a8dce0e68769ce7b0da88c84c61b30249d37437`
+[View on Explorer](https://stellar.expert/explorer/testnet/tx/588b12608cca3957b25425bf0a8dce0e68769ce7b0da88c84c61b30249d37437)
 
 ---
 
 ## 📸 Screenshots
 
-> Screenshots will be added after deployment. The app features:
-> - Landing page with hero section and feature grid
-> - Dashboard with agreement cards and payment history
-> - Real-time activity feed with event filtering
-> - Transaction center with lifecycle status tracking
-> - Analytics with distribution charts
-> - Settings with wallet/network management
+The following screenshots demonstrate the end-to-end royalty distribution workflow on Stellar Testnet:
+
+### 1. Wallet Connected State
+![Wallet Connected](docs/screenshots/01-wallet-connected.png)
+
+### 2. Balance Displayed in Dashboard
+![Balance Displayed](docs/screenshots/02-balance-displayed.png)
+
+### 3. Testnet Transaction Center
+![Testnet Transaction](docs/screenshots/03-testnet-transaction.png)
+
+### 4. Transaction Result & Verification
+![Transaction Result](docs/screenshots/04-transaction-result.png)
 
 ---
 
 ## 🎥 Demo
 
-> Demo video/link will be added after deployment.
+RoyaltyFlow is live on Stellar Testnet. You can run the application locally or connect via any Soroban-enabled wallet (such as Freighter, xBull, or Albedo) to interact with active agreements and trigger automated multi-recipient splits directly on-chain.
 
 ---
 

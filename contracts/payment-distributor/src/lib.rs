@@ -11,7 +11,7 @@ mod test;
 use errors::DistributorError;
 use events::DistributorEvents;
 use soroban_sdk::{
-    contract, contractimpl, token, Address, BytesN, Env, Symbol, Val, Vec,
+    contract, contractimpl, token, Address, BytesN, Env, IntoVal, Symbol, Vec,
 };
 use storage::Storage;
 use types::{AgreementStatus, Distribution, PaymentRecord, PaymentStatus, RoyaltyAgreement};
@@ -63,7 +63,7 @@ impl PaymentDistributorContract {
         let agreement: RoyaltyAgreement = env.invoke_contract(
             &registry_id,
             &Symbol::new(&env, "get_agreement"),
-            soroban_sdk::vec![&env, agreement_id.into()],
+            soroban_sdk::vec![&env, agreement_id.into_val(&env)],
         );
 
         // Validate agreement is active
@@ -110,9 +110,9 @@ impl PaymentDistributorContract {
             &Symbol::new(&env, "record_distribution"),
             soroban_sdk::vec![
                 &env,
-                env.current_contract_address().into(),
-                agreement_id.into(),
-                amount.into()
+                env.current_contract_address().into_val(&env),
+                agreement_id.into_val(&env),
+                amount.into_val(&env)
             ],
         );
 

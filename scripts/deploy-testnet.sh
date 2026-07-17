@@ -43,9 +43,15 @@ cargo build --release --target wasm32-unknown-unknown
 cd ..
 echo -e "${GREEN}✓ Contracts built${NC}"
 
+# Step 3b: Optimize WASM files for Soroban deployment
+echo -e "\n${YELLOW}Step 3b: Optimizing WASM files...${NC}"
+stellar contract optimize --wasm ${CONTRACTS_DIR}/target/wasm32-unknown-unknown/release/royalty_registry.wasm
+stellar contract optimize --wasm ${CONTRACTS_DIR}/target/wasm32-unknown-unknown/release/payment_distributor.wasm
+echo -e "${GREEN}✓ WASM files optimized${NC}"
+
 # Step 4: Deploy RoyaltyRegistry
 echo -e "\n${YELLOW}Step 4: Deploying RoyaltyRegistry contract...${NC}"
-REGISTRY_WASM="${CONTRACTS_DIR}/target/wasm32-unknown-unknown/release/royalty_registry.wasm"
+REGISTRY_WASM="${CONTRACTS_DIR}/target/wasm32-unknown-unknown/release/royalty_registry.optimized.wasm"
 REGISTRY_ID=$(stellar contract deploy \
   --wasm ${REGISTRY_WASM} \
   --source ${SOURCE_ACCOUNT} \
@@ -54,7 +60,7 @@ echo -e "${GREEN}✓ RoyaltyRegistry deployed: ${REGISTRY_ID}${NC}"
 
 # Step 5: Deploy PaymentDistributor
 echo -e "\n${YELLOW}Step 5: Deploying PaymentDistributor contract...${NC}"
-DISTRIBUTOR_WASM="${CONTRACTS_DIR}/target/wasm32-unknown-unknown/release/payment_distributor.wasm"
+DISTRIBUTOR_WASM="${CONTRACTS_DIR}/target/wasm32-unknown-unknown/release/payment_distributor.optimized.wasm"
 DISTRIBUTOR_ID=$(stellar contract deploy \
   --wasm ${DISTRIBUTOR_WASM} \
   --source ${SOURCE_ACCOUNT} \
