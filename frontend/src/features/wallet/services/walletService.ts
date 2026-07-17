@@ -17,7 +17,7 @@ interface WalletProvider {
  */
 function getFreighter(): any {
   if (typeof window === 'undefined') return null;
-  return (window as any).freighter || (window as any).freighterApi || null;
+  return (window as any).freighter || (window as any).freighterApi || (window as any).Freighter || null;
 }
 
 /**
@@ -31,9 +31,18 @@ function isFreighterAvailable(): boolean {
  * Connect to Freighter wallet
  */
 async function connectFreighter(): Promise<string> {
-  const freighter = getFreighter();
+  let freighter = getFreighter();
   if (!freighter) {
-    throw new Error('Freighter wallet not found. Please install or enable the browser extension.');
+    // Poll up to 1.5s in case extension injection is delayed
+    for (let i = 0; i < 15; i++) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      freighter = getFreighter();
+      if (freighter) break;
+    }
+  }
+
+  if (!freighter) {
+    throw new Error('Freighter wallet not found. Please install from https://www.freighter.app and refresh.');
   }
 
   // Try modern Freighter API (v5+) first: requestAccess()

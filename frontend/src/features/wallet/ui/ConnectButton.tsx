@@ -1,15 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWallet } from '../hooks/useWallet';
 import { shortenAddress } from '@/shared/lib/stellar';
-import { Wallet, ChevronDown, LogOut, Copy, ExternalLink, Loader2 } from 'lucide-react';
+import { Wallet, ChevronDown, LogOut, Copy, ExternalLink, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function ConnectButton() {
   const { address, isConnected, isConnecting, walletName, connect, disconnect, availableWallets } = useWallet();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showWalletSelect, setShowWalletSelect] = useState(false);
+  const [, setTick] = useState(0);
+
+  // Periodically re-check availability while modal is open in case browser extension injects asynchronously
+  useEffect(() => {
+    if (!showWalletSelect) return;
+    const timer = setInterval(() => setTick((t) => t + 1), 500);
+    return () => clearInterval(timer);
+  }, [showWalletSelect]);
 
   const copyAddress = () => {
     if (address) {
@@ -79,9 +87,9 @@ export function ConnectButton() {
   }
 
   return (
-    <div className="relative">
+    <div>
       <button
-        onClick={() => setShowWalletSelect(!showWalletSelect)}
+        onClick={() => setShowWalletSelect(true)}
         className="btn-primary"
         id="connect-wallet-button"
       >
@@ -90,33 +98,94 @@ export function ConnectButton() {
       </button>
 
       {showWalletSelect && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setShowWalletSelect(false)} />
-          <div className="absolute right-0 top-full mt-2 w-72 glass-card border border-white/10 rounded-xl shadow-2xl z-50 p-4 animate-fade-in">
-            <h3 className="text-sm font-semibold mb-3">Select Wallet</h3>
-            <div className="space-y-2">
-              {availableWallets.map((wallet) => (
-                <button
-                  key={wallet.id}
-                  onClick={() => {
-                    connect(wallet.id);
-                    setShowWalletSelect(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/5 border border-white/5 hover:border-white/10 transition-all text-left"
-                  id={`connect-${wallet.id}`}
-                >
-                  <span className="text-2xl">{wallet.icon}</span>
-                  <div>
-                    <p className="font-medium text-sm">{wallet.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {wallet.isAvailable() ? 'Available' : 'Not installed'}
-                    </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm animate-fade-in"
+            onClick={() => setShowWalletSelect(false)}
+          />
+          <div className="relative w-full max-w-md glass-card border border-white/15 rounded-2xl shadow-2xl z-50 p-6 animate-scale-in">
+            <div className="flex items-center justify-between mb-5 border-b border-white/10 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                  <Wallet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-foreground">Connect Wallet</h3>
+                  <p className="text-xs text-muted-foreground">Select a Stellar wallet to continue</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowWalletSelect(false)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {availableWallets.map((wallet) => {
+                const available = wallet.isAvailable();
+                return (
+                  <div
+                    key={wallet.id}
+                    className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/20 transition-all group cursor-pointer"
+                    onClick={() => {
+                      connect(wallet.id);
+                      setShowWalletSelect(false);
+                    }}
+                    id={`connect-${wallet.id}`}
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <span className="text-2xl p-2 rounded-lg bg-white/5 group-hover:scale-110 transition-transform flex items-center justify-center">
+                        {wallet.icon}
+                      </span>
+                      <div>
+                        <p className="font-semibold text-sm text-foreground">{wallet.name}</p>
+                        <p className={`text-xs mt-0.5 flex items-center gap-1.5 ${available ? 'text-emerald-400 font-medium' : 'text-muted-foreground'}`}>
+                          {available && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+                          {available ? 'Available' : 'Not installed'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!available && wallet.id === 'freighter' && (
+                        <a
+                          href="https://www.freighter.app"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs px-3 py-1.5 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 font-medium transition-colors flex items-center gap-1"
+                        >
+                          Install <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                      {available && (
+                        <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors font-medium">
+                          Connect &rarr;
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </button>
-              ))}
+                );
+              })}
+            </div>
+
+            <div className="mt-5 pt-4 border-t border-white/10 text-center">
+              <p className="text-xs text-muted-foreground">
+                New to Stellar?{' '}
+                <a
+                  href="https://www.freighter.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline font-medium"
+                >
+                  Download Freighter Wallet
+                </a>
+              </p>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
