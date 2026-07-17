@@ -248,41 +248,11 @@ export const WALLET_PROVIDERS: WalletProvider[] = [
   {
     name: 'Freighter',
     id: 'freighter',
-    icon: '🦊',
+    icon: '🚀', // Optional fallback icon
     isAvailable: isFreighterAvailableSync,
-    isAvailableAsync: isFreighterAvailableAsync,
     connect: connectFreighter,
     signTransaction: signWithFreighter,
-  },
-  {
-    name: 'xBull',
-    id: 'xbull',
-    icon: '🐂',
-    isAvailable: () => typeof window !== 'undefined' && !!(window as any).xBullSDK,
-    connect: async () => {
-      const xBull = (window as any).xBullSDK;
-      if (!xBull) throw new Error('xBull wallet not found');
-      const { address } = await xBull.connect();
-      return address;
-    },
-    signTransaction: async (xdr: string) => {
-      const xBull = (window as any).xBullSDK;
-      return xBull.signXDR(xdr, { networkPassphrase: NETWORK_PASSPHRASE });
-    },
-  },
-  {
-    name: 'Albedo',
-    id: 'albedo',
-    icon: '🌟',
-    isAvailable: () => true, // Web-based, always available
-    connect: async () => {
-      // Albedo uses web-based popup — simulate for demo
-      throw new Error('Albedo integration requires the albedo-link package. Install it for production use.');
-    },
-    signTransaction: async () => {
-      throw new Error('Albedo signing not configured');
-    },
-  },
+  }
 ];
 
 export function getWalletProvider(id: SupportedWallet): WalletProvider | undefined {
