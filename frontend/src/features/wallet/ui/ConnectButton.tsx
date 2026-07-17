@@ -7,7 +7,7 @@ import { Wallet, ChevronDown, LogOut, Copy, ExternalLink, Loader2, X } from 'luc
 import { toast } from 'sonner';
 
 export function ConnectButton() {
-  const { address, isConnected, isConnecting, walletName, connect, disconnect, availableWallets } = useWallet();
+  const { address, isConnected, isConnecting, walletName, connect, disconnect, availableWallets, error } = useWallet();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showWalletSelect, setShowWalletSelect] = useState(false);
   const [availabilityMap, setAvailabilityMap] = useState<Record<string, boolean>>({});
@@ -194,6 +194,26 @@ export function ConnectButton() {
                 </a>
               </p>
             </div>
+            {error && /freighter/i.test(error) && (
+              <div className="mt-4 p-3 rounded-lg bg-yellow-700/10 border border-yellow-500/10 text-sm text-yellow-300">
+                <p className="font-semibold">Troubleshooting Freighter</p>
+                <ol className="mt-1 list-decimal list-inside text-xs text-muted-foreground">
+                  <li>Ensure the Freighter extension is installed and enabled in your browser.</li>
+                  <li>Make sure you are logged in to Freighter and unlocked.</li>
+                  <li>Click the Freighter icon in the browser toolbar, then retry connecting here.</li>
+                </ol>
+                <div className="mt-2">
+                  <a
+                    href="https://support.freighter.app/hc/en-us"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline font-medium"
+                  >
+                    Freighter Troubleshooting Guide
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
