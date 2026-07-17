@@ -19,7 +19,14 @@ export function useWallet() {
         throw new Error(`Wallet "${walletId}" is not supported`);
       }
 
-      if (!provider.isAvailable()) {
+      let available = provider.isAvailable();
+      if (!available && provider.isAvailableAsync) {
+        try {
+          available = await provider.isAvailableAsync();
+        } catch {}
+      }
+
+      if (!available && walletId !== 'freighter') {
         throw new Error(
           `${provider.name} wallet is not installed. Please install the browser extension and try again.`
         );

@@ -10,14 +10,36 @@ export function ConnectButton() {
   const { address, isConnected, isConnecting, walletName, connect, disconnect, availableWallets } = useWallet();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showWalletSelect, setShowWalletSelect] = useState(false);
-  const [, setTick] = useState(0);
+  const [availabilityMap, setAvailabilityMap] = useState<Record<string, boolean>>({});
 
-  // Periodically re-check availability while modal is open in case browser extension injects asynchronously
+  // Periodically re-check availability while modal is open (handles both synchronous and async postMessage checks like @stellar/freighter-api)
   useEffect(() => {
     if (!showWalletSelect) return;
-    const timer = setInterval(() => setTick((t) => t + 1), 500);
-    return () => clearInterval(timer);
-  }, [showWalletSelect]);
+    let cancelled = false;
+
+    const checkAvailability = async () => {
+      const map: Record<string, boolean> = {};
+      for (const wallet of availableWallets) {
+        let avail = wallet.isAvailable();
+        if (!avail && (wallet as any).isAvailableAsync) {
+          try {
+            avail = await (wallet as any).isAvailableAsync();
+          } catch {}
+        }
+        map[wallet.id] = avail;
+      }
+      if (!cancelled) {
+        setAvailabilityMap(map);
+      }
+    };
+
+    checkAvailability();
+    const timer = setInterval(checkAvailability, 600);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [showWalletSelect, availableWallets]);
 
   const copyAddress = () => {
     if (address) {
@@ -125,7 +147,7 @@ export function ConnectButton() {
 
             <div className="space-y-3">
               {availableWallets.map((wallet) => {
-                const available = wallet.isAvailable();
+                const available = availabilityMap[wallet.id] ?? wallet.isAvailable();
                 return (
                   <div
                     key={wallet.id}
