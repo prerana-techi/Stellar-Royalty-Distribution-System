@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useWalletStore } from '../store/walletStore';
 import { WALLET_PROVIDERS, getWalletProvider, type SupportedWallet } from '../services/walletService';
 import { logger } from '@/shared/lib/logger';
@@ -60,12 +60,18 @@ export function useWallet() {
     }
   }, [store.walletName]);
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return {
-    address: store.address,
-    isConnected: store.isConnected,
+    address: mounted ? store.address : null,
+    isConnected: mounted ? store.isConnected : false,
     isConnecting: store.isConnecting,
     network: store.network,
-    walletName: store.walletName,
+    walletName: mounted ? store.walletName : null,
     error: store.error,
     connect,
     disconnect,

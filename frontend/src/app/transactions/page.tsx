@@ -201,7 +201,7 @@ export default function TransactionsPage() {
 
               <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-muted-foreground">
                 <span className="capitalize">{tx.type.replace(/_/g, ' ')}</span>
-                <span>{new Date(tx.timestamp).toLocaleString()}</span>
+                <span suppressHydrationWarning>{new Date(tx.timestamp).toLocaleString()}</span>
               </div>
             </motion.div>
           );
