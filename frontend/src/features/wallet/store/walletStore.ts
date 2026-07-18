@@ -60,10 +60,7 @@ export const useWalletStore = create<WalletStore>()(
     {
       name: 'royaltyflow-wallet',
       partialize: (state) => ({
-        address: state.address,
-        isConnected: state.isConnected,
         network: state.network,
-        walletName: state.walletName,
       }),
     }
   )

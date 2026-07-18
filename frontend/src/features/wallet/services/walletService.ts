@@ -241,6 +241,49 @@ async function signWithFreighter(xdr: string): Promise<string> {
 }
 
 // ─────────────────────────────────────────────────────
+// Session revalidation
+// ─────────────────────────────────────────────────────
+
+/**
+ * Silently check if Freighter is still connected and return
+ * the active address. Returns null if the extension is absent,
+ * locked, or the user has revoked access. This never triggers
+ * a popup — it only reads existing permissions.
+ */
+export async function revalidateFreighterConnection(): Promise<string | null> {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const connResult = await withTimeout(freighterIsConnected(), 3000, null);
+    if (connResult === null) return null;
+
+    // v6 object shape
+    if (connResult && typeof connResult === 'object' && !connResult.isConnected) {
+      return null;
+    }
+
+    // Extension is connected — get the active address
+    const addrResult = await withTimeout(freighterGetAddress(), 3000, null);
+    if (addrResult === null) return null;
+
+    if (addrResult && typeof addrResult === 'object') {
+      if (addrResult.error) return null;
+      if (addrResult.address && typeof addrResult.address === 'string') {
+        return addrResult.address;
+      }
+    }
+
+    if (typeof addrResult === 'string' && addrResult.startsWith('G')) {
+      return addrResult as string;
+    }
+  } catch {
+    // Extension not available or locked
+  }
+
+  return null;
+}
+
+// ─────────────────────────────────────────────────────
 // Wallet provider registry
 // ─────────────────────────────────────────────────────
 
@@ -262,3 +305,4 @@ export function getWalletProvider(id: SupportedWallet): WalletProvider | undefin
 export function getAvailableWallets(): WalletProvider[] {
   return WALLET_PROVIDERS.filter(w => w.isAvailable());
 }
+

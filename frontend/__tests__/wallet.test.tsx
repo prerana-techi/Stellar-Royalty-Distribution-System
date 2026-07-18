@@ -38,6 +38,7 @@ vi.mock('@/features/wallet/services/walletService', () => ({
     connect: vi.fn().mockResolvedValue('GABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF'),
     signTransaction: vi.fn().mockResolvedValue('signed-xdr'),
   }),
+  revalidateFreighterConnection: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock('sonner', () => ({
