@@ -133,9 +133,9 @@ async function connectFreighter(): Promise<string> {
       }
 
       // Older API might return a raw string
-      if (typeof result === 'string' && result.startsWith('G')) {
-        logger.info('[Freighter] Connected via requestAccess (string)', { address: result });
-        return result as string;
+      if (typeof result === 'string' && String(result).startsWith('G')) {
+        logger.info('[Freighter] Connected via requestAccess (string)', { address: String(result) });
+        return String(result);
       }
     }
   } catch (err: any) {
@@ -169,8 +169,8 @@ async function connectFreighter(): Promise<string> {
         }
       }
 
-      if (typeof result === 'string' && result.startsWith('G')) {
-        return result as string;
+      if (typeof result === 'string' && String(result).startsWith('G')) {
+        return String(result);
       }
     }
   } catch (err: any) {
@@ -273,8 +273,8 @@ export async function revalidateFreighterConnection(): Promise<string | null> {
       }
     }
 
-    if (typeof addrResult === 'string' && addrResult.startsWith('G')) {
-      return addrResult as string;
+    if (typeof addrResult === 'string' && String(addrResult).startsWith('G')) {
+      return String(addrResult);
     }
   } catch {
     // Extension not available or locked
