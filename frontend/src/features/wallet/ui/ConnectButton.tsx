@@ -5,10 +5,14 @@ import { useWallet } from '../hooks/useWallet';
 import { shortenAddress } from '@/shared/lib/stellar';
 import { Wallet, ChevronDown, LogOut, Copy, ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { WalletModal } from './WalletModal';
+import type { SupportedWallet } from '../services/walletService';
 
 export function ConnectButton() {
   const { address, isConnected, isConnecting, walletName, connect, disconnect, error } = useWallet();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [connectingWallet, setConnectingWallet] = useState<SupportedWallet | null>(null);
 
   const copyAddress = () => {
     if (address) {
@@ -17,7 +21,14 @@ export function ConnectButton() {
     }
   };
 
-  if (isConnecting) {
+  const handleWalletSelect = async (walletId: SupportedWallet) => {
+    setConnectingWallet(walletId);
+    await connect(walletId);
+    setConnectingWallet(null);
+    setShowModal(false);
+  };
+
+  if (isConnecting && !showModal) {
     return (
       <button className="btn-primary opacity-80 cursor-wait" disabled>
         <Loader2 className="w-4 h-4 animate-spin" />
@@ -78,9 +89,9 @@ export function ConnectButton() {
   }
 
   return (
-    <div className="relative">
+    <>
       <button
-        onClick={() => connect('freighter')}
+        onClick={() => setShowModal(true)}
         className="btn-primary"
         id="connect-wallet-button"
       >
@@ -88,7 +99,15 @@ export function ConnectButton() {
         Connect Wallet
       </button>
 
-      {error && (
+      <WalletModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onSelect={handleWalletSelect}
+        isConnecting={isConnecting}
+        connectingWallet={connectingWallet}
+      />
+
+      {error && !showModal && (
         <div className="absolute right-0 top-full mt-4 w-72 glass-card border border-red-500/30 shadow-2xl z-50 p-4 animate-fade-in">
           <p className="font-bold text-red-400 mb-2 text-sm">Connection Failed</p>
           <ol className="list-decimal list-inside text-xs text-muted-foreground space-y-2">
@@ -98,6 +117,6 @@ export function ConnectButton() {
           </ol>
         </div>
       )}
-    </div>
+    </>
   );
 }

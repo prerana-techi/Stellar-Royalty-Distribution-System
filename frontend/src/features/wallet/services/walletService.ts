@@ -291,11 +291,48 @@ export const WALLET_PROVIDERS: WalletProvider[] = [
   {
     name: 'Freighter',
     id: 'freighter',
-    icon: '🚀', // Optional fallback icon
+    icon: '🚀',
     isAvailable: isFreighterAvailableSync,
+    isAvailableAsync: isFreighterAvailableAsync,
     connect: connectFreighter,
     signTransaction: signWithFreighter,
-  }
+  },
+  {
+    name: 'xBull',
+    id: 'xbull',
+    icon: '🐂',
+    isAvailable: () => typeof window !== 'undefined' && !!(window as any).xBullSDK,
+    connect: async () => {
+      const xBull = (window as any).xBullSDK;
+      if (!xBull) throw new Error('xBull wallet is not installed. Please install the xBull browser extension.');
+      const { publicKey } = await xBull.connect({ canRequestPublicKey: true, canRequestSign: true });
+      return publicKey;
+    },
+    signTransaction: async (xdr: string) => {
+      const xBull = (window as any).xBullSDK;
+      if (!xBull) throw new Error('xBull wallet not available');
+      return await xBull.signXDR(xdr, { networkPassphrase: NETWORK_PASSPHRASE });
+    },
+  },
+  {
+    name: 'Albedo',
+    id: 'albedo',
+    icon: '🌟',
+    isAvailable: () => true, // Albedo is web-based, always "available"
+    connect: async () => {
+      const albedo = await import('https://unpkg.com/@albedo-link/intent@0.12.0/lib/albedo.intent.js' as any)
+        .catch(() => (window as any).albedo);
+      if (!albedo) throw new Error('Could not load Albedo. Please try again.');
+      const result = await albedo.publicKey({});
+      return result.pubkey;
+    },
+    signTransaction: async (xdr: string) => {
+      const albedo = (window as any).albedo;
+      if (!albedo) throw new Error('Albedo not available');
+      const result = await albedo.tx({ xdr, network: NETWORK === 'testnet' ? 'testnet' : 'public' });
+      return result.signed_envelope_xdr;
+    },
+  },
 ];
 
 export function getWalletProvider(id: SupportedWallet): WalletProvider | undefined {

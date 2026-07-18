@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { createAgreement } from '../services/registryService';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
+import { submitTransaction } from '@/shared/lib/contracts';
 
 export const CreateAgreementModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
-  const { address } = useWallet();
+  const { address, signTransaction } = useWallet();
   const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +21,9 @@ export const CreateAgreementModal = ({ isOpen, onClose }: { isOpen: boolean, onC
         share_bps: 10000
       }];
       
-      await createAgreement(address, title, recipients);
+      const xdr = await createAgreement(address, title, recipients);
+      const signedXdr = await signTransaction(xdr);
+      await submitTransaction(signedXdr);
       alert("Agreement created successfully!");
       onClose();
     } catch (err) {

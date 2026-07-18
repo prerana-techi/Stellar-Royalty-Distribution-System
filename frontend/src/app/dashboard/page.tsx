@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import {
@@ -14,6 +15,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
+import { CreateAgreementModal } from '@/features/agreements/ui/CreateAgreementModal';
 
 const mockAgreements = [
   { id: 1, title: 'Album: Midnight Dreams', status: 'Active', recipients: 3, distributed: 45000, created: '2024-12-01' },
@@ -30,6 +32,7 @@ const recentPayments = [
 
 export default function DashboardPage() {
   const { isConnected, address } = useWallet();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const statCards = [
     { label: 'Total Agreements', value: '4', icon: FileText, color: 'from-purple-500 to-violet-600', change: '+2 this month' },
@@ -48,9 +51,9 @@ export default function DashboardPage() {
             {isConnected ? 'Overview of your royalty agreements and distributions' : 'Connect your wallet to get started'}
           </p>
         </div>
-        <Link href="/dashboard" className="btn-primary">
+        <button onClick={() => setIsModalOpen(true)} className="btn-primary">
           <Plus className="w-4 h-4" /> New Agreement
-        </Link>
+        </button>
       </div>
 
       {/* Stat Cards */}
@@ -154,6 +157,7 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+      <CreateAgreementModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }

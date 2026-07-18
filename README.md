@@ -294,7 +294,10 @@ Key practices:
 
 The following screenshots demonstrate the end-to-end royalty distribution workflow on Stellar Testnet:
 
-### 1. Wallet Connected State
+### 1. Wallet Options Available
+![Wallet Options](docs/screenshots/00-wallet-options.png)
+
+### 2. Wallet Connected State
 ![Wallet Connected](docs/screenshots/01-wallet-connected.png)
 
 ### 2. Balance Displayed in Dashboard
