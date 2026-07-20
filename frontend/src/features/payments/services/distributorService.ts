@@ -1,8 +1,7 @@
 import { buildContractTransaction } from '@/shared/lib/contracts';
 import * as StellarSdk from '@stellar/stellar-sdk';
 import { Address, xdr } from '@stellar/stellar-sdk';
-
-const DISTRIBUTOR_CONTRACT_ID = process.env.NEXT_PUBLIC_DISTRIBUTOR_CONTRACT_ID || 'CXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+import { DISTRIBUTOR_CONTRACT_ID } from '@/shared/lib/stellar';
 
 export const distributePayment = async (payer: string, agreementId: number, amount: number, tokenAddress: string) => {
   const tx = await buildContractTransaction({

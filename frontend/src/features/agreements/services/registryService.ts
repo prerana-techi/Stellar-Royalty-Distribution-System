@@ -2,8 +2,7 @@ import { buildContractTransaction, simulateContractCall } from '@/shared/lib/con
 import { RoyaltyAgreement, Recipient } from '@/shared/types';
 import * as StellarSdk from '@stellar/stellar-sdk';
 import { Address, xdr, scValToNative } from '@stellar/stellar-sdk';
-
-const REGISTRY_CONTRACT_ID = process.env.NEXT_PUBLIC_REGISTRY_CONTRACT_ID || 'CXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+import { REGISTRY_CONTRACT_ID } from '@/shared/lib/stellar';
 
 export const createAgreement = async (owner: string, title: string, recipients: Recipient[]) => {
   const recipientsScVal = xdr.ScVal.scvVec(
