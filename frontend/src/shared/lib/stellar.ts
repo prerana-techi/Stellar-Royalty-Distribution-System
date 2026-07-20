@@ -32,5 +32,5 @@ export function shortenAddress(address: string, chars = 4): string {
 
 export function formatXLM(stroops: bigint | number | string): string {
   const val = Number(stroops) / 10_000_000;
-  return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 7 });
+  return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 7 });
 }

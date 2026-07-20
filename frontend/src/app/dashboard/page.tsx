@@ -198,7 +198,7 @@ export default function DashboardPage() {
                         <p className="font-medium text-sm">{agreement.title}</p>
                         <p className="text-xs text-muted-foreground">
                           {agreement.recipients.length} recipient{agreement.recipients.length !== 1 ? 's' : ''} ·{' '}
-                          Created {new Date(agreement.created_at * 1000).toLocaleDateString()}
+                          Created {new Date(agreement.created_at * 1000).toLocaleDateString('en-US')}
                         </p>
                       </div>
                     </div>
@@ -241,7 +241,7 @@ export default function DashboardPage() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">${payment.amount.toLocaleString()}</p>
+                  <p className="text-sm font-medium">${payment.amount.toLocaleString('en-US')}</p>
                   <p className="text-xs text-muted-foreground truncate">{payment.agreement}</p>
                 </div>
                 <span className="text-xs text-muted-foreground whitespace-nowrap">{payment.time}</span>
