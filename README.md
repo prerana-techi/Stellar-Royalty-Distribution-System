@@ -322,6 +322,9 @@ The following screenshots demonstrate the end-to-end royalty distribution workfl
 
 ## 🎥 Demo
 
+[![RoyaltyFlow Demo Video](https://img.youtube.com/vi/YOUR_VIDEO_ID/0.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID)
+> 👆 **Click to watch the demo video** *(Replace `YOUR_VIDEO_ID` with your actual YouTube video ID)*
+
 RoyaltyFlow is live on Stellar Testnet. You can run the application locally or connect via any Soroban-enabled wallet (such as Freighter, xBull, or Albedo) to interact with active agreements and trigger automated multi-recipient splits directly on-chain.
 
 ---
