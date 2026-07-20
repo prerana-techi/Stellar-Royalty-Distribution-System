@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
+import { useAgreements } from '@/features/agreements/hooks/useAgreements';
 import {
   FileText,
   DollarSign,
@@ -13,16 +14,13 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  Loader2,
+  RefreshCw,
+  Inbox,
 } from 'lucide-react';
 import Link from 'next/link';
 import { CreateAgreementModal } from '@/features/agreements/ui/CreateAgreementModal';
-
-const mockAgreements = [
-  { id: 1, title: 'Album: Midnight Dreams', status: 'Active', recipients: 3, distributed: 45000, created: '2024-12-01' },
-  { id: 2, title: 'Single: Electric Vibes', status: 'Active', recipients: 2, distributed: 12500, created: '2024-12-15' },
-  { id: 3, title: 'EP: Sunset Sessions', status: 'Draft', recipients: 4, distributed: 0, created: '2025-01-02' },
-  { id: 4, title: 'Podcast: Tech Talk S3', status: 'Paused', recipients: 2, distributed: 8200, created: '2024-11-20' },
-];
+import { formatXLM } from '@/shared/lib/stellar';
 
 const recentPayments = [
   { id: 1, agreement: 'Midnight Dreams', amount: 5000, status: 'confirmed', time: '2 hours ago' },
@@ -30,16 +28,59 @@ const recentPayments = [
   { id: 3, agreement: 'Midnight Dreams', amount: 3000, status: 'processing', time: '1 day ago' },
 ];
 
+function formatStatus(status: string): string {
+  // Contract returns status as enum variant names like "Draft", "Active", etc.
+  const s = String(status);
+  // Handle both raw enum values and pre-formatted strings
+  if (s === 'Draft' || s === 'Active' || s === 'Paused' || s === 'Terminated') return s;
+  // Capitalize first letter as fallback
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
 export default function DashboardPage() {
   const { isConnected, address } = useWallet();
+  const { agreements, isLoading, error, refresh } = useAgreements();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const totalDistributed = agreements.reduce((sum, a) => sum + a.total_distributed, 0);
+  const totalRecipients = agreements.reduce((sum, a) => sum + a.recipients.length, 0);
+  const avgDistribution = agreements.length > 0 ? totalDistributed / agreements.length : 0;
+
   const statCards = [
-    { label: 'Total Agreements', value: '4', icon: FileText, color: 'from-purple-500 to-violet-600', change: '+2 this month' },
-    { label: 'Total Distributed', value: '$65,700', icon: DollarSign, color: 'from-emerald-500 to-teal-500', change: '+12.5%' },
-    { label: 'Recipients', value: '11', icon: Users, color: 'from-blue-500 to-cyan-500', change: '4 agreements' },
-    { label: 'Avg. Distribution', value: '$5,475', icon: TrendingUp, color: 'from-orange-500 to-amber-500', change: '+8.3%' },
+    {
+      label: 'Total Agreements',
+      value: isLoading ? '...' : String(agreements.length),
+      icon: FileText,
+      color: 'from-purple-500 to-violet-600',
+      change: agreements.length > 0 ? `${agreements.filter(a => formatStatus(a.status) === 'Active').length} active` : 'None yet',
+    },
+    {
+      label: 'Total Distributed',
+      value: isLoading ? '...' : formatXLM(totalDistributed),
+      icon: DollarSign,
+      color: 'from-emerald-500 to-teal-500',
+      change: 'XLM',
+    },
+    {
+      label: 'Recipients',
+      value: isLoading ? '...' : String(totalRecipients),
+      icon: Users,
+      color: 'from-blue-500 to-cyan-500',
+      change: `${agreements.length} agreement${agreements.length !== 1 ? 's' : ''}`,
+    },
+    {
+      label: 'Avg. Distribution',
+      value: isLoading ? '...' : formatXLM(avgDistribution),
+      icon: TrendingUp,
+      color: 'from-orange-500 to-amber-500',
+      change: 'per agreement',
+    },
   ];
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    // The modal triggers a refresh via the store itself
+  };
 
   return (
     <div className="space-y-8">
@@ -48,12 +89,27 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground mt-1">
-            {isConnected ? 'Overview of your royalty agreements and distributions' : 'Connect your wallet to get started'}
+            {isConnected
+              ? 'Overview of your royalty agreements and distributions'
+              : 'Connect your wallet to get started'}
           </p>
         </div>
-        <button onClick={() => setIsModalOpen(true)} className="btn-primary">
-          <Plus className="w-4 h-4" /> New Agreement
-        </button>
+        <div className="flex items-center gap-2">
+          {isConnected && (
+            <button
+              onClick={refresh}
+              disabled={isLoading}
+              className="btn-secondary text-sm py-2.5 px-3"
+              title="Refresh from chain"
+              id="refresh-agreements"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+          )}
+          <button onClick={() => setIsModalOpen(true)} className="btn-primary" id="new-agreement-btn">
+            <Plus className="w-4 h-4" /> New Agreement
+          </button>
+        </div>
       </div>
 
       {/* Stat Cards */}
@@ -82,40 +138,83 @@ export default function DashboardPage() {
         {/* Agreements List */}
         <div className="lg:col-span-2 glass-card p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold">Recent Agreements</h2>
-            <Link href="/dashboard" className="text-sm text-primary hover:underline flex items-center gap-1">
-              View all <ArrowRight className="w-3 h-3" />
-            </Link>
+            <h2 className="text-lg font-semibold">Your Agreements</h2>
+            {agreements.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {agreements.length} total
+              </span>
+            )}
           </div>
-          <div className="space-y-3">
-            {mockAgreements.map((agreement, i) => (
-              <motion.div
-                key={agreement.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="flex items-center justify-between p-4 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors border border-white/5"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center text-sm font-bold text-purple-300">
-                    #{agreement.id}
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{agreement.title}</p>
-                    <p className="text-xs text-muted-foreground">{agreement.recipients} recipients · Created {agreement.created}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className={`status-badge status-${agreement.status.toLowerCase()}`}>
-                    {agreement.status}
-                  </span>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    ${agreement.distributed.toLocaleString()} distributed
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Loader2 className="w-8 h-8 animate-spin mb-3 text-primary/60" />
+              <p className="text-sm">Fetching your agreements from chain...</p>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && !isLoading && (
+            <div className="flex flex-col items-center justify-center py-12">
+              <AlertCircle className="w-8 h-8 mb-3 text-red-400" />
+              <p className="text-sm text-red-400 mb-3">{error}</p>
+              <button onClick={refresh} className="btn-secondary text-sm py-2">
+                <RefreshCw className="w-3.5 h-3.5" /> Try Again
+              </button>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!isLoading && !error && agreements.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Inbox className="w-12 h-12 mb-3 text-white/10" />
+              <p className="text-sm font-medium text-gray-400 mb-1">No agreements yet</p>
+              <p className="text-xs text-gray-500 mb-4">Create your first royalty agreement to get started</p>
+              <button onClick={() => setIsModalOpen(true)} className="btn-primary text-sm">
+                <Plus className="w-3.5 h-3.5" /> Create Agreement
+              </button>
+            </div>
+          )}
+
+          {/* Agreements */}
+          {!isLoading && !error && agreements.length > 0 && (
+            <div className="space-y-3">
+              {agreements.map((agreement, i) => {
+                const status = formatStatus(agreement.status);
+                return (
+                  <motion.div
+                    key={agreement.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="flex items-center justify-between p-4 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors border border-white/5"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center text-sm font-bold text-purple-300">
+                        #{agreement.id}
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{agreement.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {agreement.recipients.length} recipient{agreement.recipients.length !== 1 ? 's' : ''} ·{' '}
+                          Created {new Date(agreement.created_at * 1000).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className={`status-badge status-${status.toLowerCase()}`}>
+                        {status}
+                      </span>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatXLM(agreement.total_distributed)} distributed
+                      </p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Recent Payments */}
@@ -157,7 +256,7 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
-      <CreateAgreementModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <CreateAgreementModal isOpen={isModalOpen} onClose={handleModalClose} />
     </div>
   );
 }
