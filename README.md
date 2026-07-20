@@ -309,6 +309,15 @@ The following screenshots demonstrate the end-to-end royalty distribution workfl
 ### 4. Transaction Result & Verification
 ![Transaction Result](docs/screenshots/04-transaction-result.png)
 
+### 5. Mobile Responsive UI
+![Mobile Responsive](docs/screenshots/05-mobile-responsive.png)
+
+### 6. CI/CD Pipeline (GitHub Actions)
+![CI/CD Pipeline](docs/screenshots/06-ci-cd-pipeline.png)
+
+### 7. Test Output — 17 Tests Passing
+![Test Output](docs/screenshots/07-test-output.png)
+
 ---
 
 ## 🎥 Demo
