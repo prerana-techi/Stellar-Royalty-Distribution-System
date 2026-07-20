@@ -30,7 +30,7 @@ interface MockTx {
 const mockTransactions: MockTx[] = [
   {
     id: '1',
-    hash: '4a8f2c1d3e5b6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b',
+    hash: 'b9d0b2292c4e09e8eb22d036171491e87b8d2086bf8b265874c8d182cb9c9020',
     type: 'distribute',
     description: 'Distribute 5,000 XLM for "Midnight Dreams"',
     status: 'confirmed',
@@ -39,7 +39,7 @@ const mockTransactions: MockTx[] = [
   },
   {
     id: '2',
-    hash: '1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b',
+    hash: '10791934e9bdc235ed902cf80f2558dd336e110fe467a66a430d3640404d9dc8',
     type: 'create_agreement',
     description: 'Create agreement "Sunset Sessions"',
     status: 'confirmed',
@@ -47,7 +47,7 @@ const mockTransactions: MockTx[] = [
   },
   {
     id: '3',
-    hash: '9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c',
+    hash: '4c2da5b9b50f77a476fa20a5b6ad75986b86010f87aab9a78b0e3e0ee0b4a79b',
     type: 'distribute',
     description: 'Distribute 2,500 XLM for "Electric Vibes"',
     status: 'processing',
