@@ -285,7 +285,7 @@ Key practices:
 > **Production Frontend Deployments**
 >
 > The RoyaltyFlow Next.js frontend is deployed on two CDN platforms:
-> - **Vercel:** [https://frontend-psi-three-vnt6o1v3cz.vercel.app](https://frontend-psi-three-vnt6o1v3cz.vercel.app)
+
 > - **Cloudflare Pages:** [https://royalty-flow.pages.dev](https://royalty-flow.pages.dev)
 
 ---
