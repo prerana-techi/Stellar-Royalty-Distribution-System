@@ -280,13 +280,13 @@ Key practices:
 
 ---
 
-## 🌐 Live Demo
+## 🌐 Live Demo & Deployment Links
 
-> **Production Frontend Deployments**
->
-> The RoyaltyFlow Next.js frontend is deployed on two CDN platforms:
-
-> - **Cloudflare Pages:** [https://royalty-flow.pages.dev](https://royalty-flow.pages.dev)
+| Resource | Link / URL | Status |
+|---|---|---|
+| 🚀 **Live dApp Link (Netlify / Cloudflare)** | [https://royaltyflow.netlify.app](https://royaltyflow.netlify.app) | 🟢 Live |
+| ⚡ **Alternative Mirror (Cloudflare Pages)** | [https://royalty-flow.pages.dev](https://royalty-flow.pages.dev) | 🟢 Live |
+| 🐙 **Public GitHub Repository** | [https://github.com/prerana-techi/Stellar-Royalty-Distribution-System](https://github.com/prerana-techi/Stellar-Royalty-Distribution-System) | 🟢 Public |
 
 ---
 
@@ -300,30 +300,31 @@ The following screenshots demonstrate the end-to-end royalty distribution workfl
 ### 2. Wallet Connected State
 ![Wallet Connected](docs/screenshots/01-wallet-connected.png)
 
-### 2. Balance Displayed in Dashboard
+### 3. Balance Displayed in Dashboard
 ![Balance Displayed](docs/screenshots/02-balance-displayed.png)
 
-### 3. Testnet Transaction Center
+### 4. Testnet Transaction Center
 ![Testnet Transaction](docs/screenshots/03-testnet-transaction.png)
 
-### 4. Transaction Result & Verification
+### 5. Transaction Result & Verification
 ![Transaction Result](docs/screenshots/04-transaction-result.png)
 
-### 5. Mobile Responsive UI
+### 6. Mobile Responsive UI
 ![Mobile Responsive](docs/screenshots/05-mobile-responsive.png)
 
-### 6. CI/CD Pipeline (GitHub Actions)
+### 7. CI/CD Pipeline (GitHub Actions)
 ![CI/CD Pipeline](docs/screenshots/06-ci-cd-pipeline.png)
 
-### 7. Test Output — 17 Tests Passing
+### 8. Test Output — 17 Tests Passing
 ![Test Output](docs/screenshots/07-test-output.png)
 
 ---
 
-## 🎥 Demo
+## 🎥 Demo Video (1–2 Minutes)
+
+> 🎬 **Watch Demo Video:** [Click Here to Watch Demo Video](https://www.youtube.com/watch?v=YOUR_VIDEO_ID) *(Replace `YOUR_VIDEO_ID` with your YouTube, Loom, or Drive video URL)*
 
 [![RoyaltyFlow Demo Video](https://img.youtube.com/vi/YOUR_VIDEO_ID/0.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID)
-> 👆 **Click to watch the demo video** *(Replace `YOUR_VIDEO_ID` with your actual YouTube video ID)*
 
 RoyaltyFlow is live on Stellar Testnet. You can run the application locally or connect via any Soroban-enabled wallet (such as Freighter, xBull, or Albedo) to interact with active agreements and trigger automated multi-recipient splits directly on-chain.
 
