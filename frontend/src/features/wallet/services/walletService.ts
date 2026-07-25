@@ -309,9 +309,10 @@ export const WALLET_PROVIDERS: WalletProvider[] = [
     icon: '🌟',
     isAvailable: () => true, // Albedo is web-based, always "available"
     connect: async () => {
-      const albedo = await import('https://unpkg.com/@albedo-link/intent@0.12.0/lib/albedo.intent.js' as any)
-        .catch(() => (window as any).albedo);
-      if (!albedo) throw new Error('Could not load Albedo. Please try again.');
+      const albedo = typeof window !== 'undefined' ? (window as any).albedo : null;
+      if (!albedo) {
+        throw new Error('Albedo web signer is not loaded. Please try again or use Freighter.');
+      }
       const result = await albedo.publicKey({});
       return result.pubkey;
     },
