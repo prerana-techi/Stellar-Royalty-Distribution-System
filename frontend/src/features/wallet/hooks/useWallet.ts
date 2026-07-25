@@ -10,31 +10,20 @@ export function useWallet() {
   const store = useWalletStore();
 
   // ── Mount-time session revalidation ──
-  // On page load, silently check if Freighter is still connected
-  // and restore the session with the *current* active address.
-  // This prevents showing a stale/persisted address from a previous
-  // session or a different user's address.
+  // On page load, if connected via Freighter, check if the address was updated
   useEffect(() => {
     let cancelled = false;
 
     async function revalidate() {
-      try {
-        const currentAddress = await revalidateFreighterConnection();
-        if (cancelled) return;
-
-        if (currentAddress) {
-          // Freighter is connected — restore session with the live address
-          logger.info('[Wallet] Session revalidated', { address: currentAddress });
-          store.connect(currentAddress, 'Freighter');
-        } else {
-          // Freighter is not connected — ensure clean disconnected state
-          if (store.isConnected) {
-            logger.info('[Wallet] Session invalidated — Freighter not connected');
-            store.disconnect();
+      if (store.walletName === 'Freighter') {
+        try {
+          const liveAddress = await revalidateFreighterConnection();
+          if (cancelled) return;
+          if (liveAddress && liveAddress !== store.address) {
+            logger.info('[Wallet] Session revalidated with updated address', { address: liveAddress });
+            store.connect(liveAddress, 'Freighter');
           }
-        }
-      } catch {
-        // Silently fail — user will just see "Connect Wallet"
+        } catch {}
       }
     }
 
@@ -44,14 +33,12 @@ export function useWallet() {
   }, []);
 
   // ── Account-change listener ──
-  // Poll Freighter every 3 seconds while connected to detect if the user
-  // switches accounts in the Freighter extension. This is necessary because
-  // Freighter v6 doesn't reliably fire change events via postMessage.
+  // Check if Freighter address changes while connected
   const currentAddressRef = useRef(store.address);
   currentAddressRef.current = store.address;
 
   useEffect(() => {
-    if (!store.isConnected) return;
+    if (!store.isConnected || store.walletName !== 'Freighter') return;
 
     const interval = setInterval(async () => {
       try {
@@ -65,19 +52,15 @@ export function useWallet() {
           toast.info('Wallet account changed', {
             description: `${liveAddress.slice(0, 8)}...${liveAddress.slice(-8)}`,
           });
-        } else if (!liveAddress && currentAddressRef.current) {
-          logger.info('[Wallet] Freighter disconnected externally');
-          store.disconnect();
-          toast.info('Wallet disconnected');
         }
       } catch {
-        // Silently ignore polling errors
+        // Silently ignore background polling errors
       }
-    }, 3000);
+    }, 5000);
 
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.isConnected]);
+  }, [store.isConnected, store.walletName]);
 
   const connect = useCallback(async (walletId: SupportedWallet) => {
     store.setConnecting(true);
@@ -89,8 +72,8 @@ export function useWallet() {
         throw new Error(`Wallet "${walletId}" is not supported`);
       }
 
-      // For Freighter, skip availability gate — connectFreighter() handles it directly
-      if (walletId !== 'freighter') {
+      // For Freighter and Demo, skip availability gate — connect handles it directly
+      if (walletId !== 'freighter' && walletId !== 'demo') {
         let available = provider.isAvailable();
         if (!available && provider.isAvailableAsync) {
           try {

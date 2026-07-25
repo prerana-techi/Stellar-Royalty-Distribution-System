@@ -28,6 +28,11 @@ const WALLET_META: Record<SupportedWallet, { gradient: string; description: stri
     description: 'Web-based Stellar signer — no extension needed',
     url: 'https://albedo.link',
   },
+  demo: {
+    gradient: 'from-emerald-500 to-teal-600',
+    description: 'Instant Testnet Account — 1-click connect, no extension required',
+    url: '#',
+  },
 };
 
 export function WalletModal({ isOpen, onClose, onSelect, isConnecting, connectingWallet }: WalletModalProps) {
