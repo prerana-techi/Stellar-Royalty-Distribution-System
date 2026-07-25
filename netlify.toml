@@ -1,9 +1,10 @@
 [build]
-  command = "npm install --legacy-peer-deps && npm run build"
+  command = "cd frontend && npm install --legacy-peer-deps --no-workspaces && npx next build"
   publish = "frontend/out"
 
 [build.environment]
   NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
   NEXT_PUBLIC_STELLAR_NETWORK = "testnet"
   NEXT_PUBLIC_SOROBAN_RPC_URL = "https://soroban-testnet.stellar.org"
