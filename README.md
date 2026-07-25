@@ -284,8 +284,7 @@ Key practices:
 
 | Resource | Link / URL | Status |
 |---|---|---|
-| 🚀 **Live dApp Link (Netlify / Cloudflare)** | [https://royaltyflow.netlify.app](https://royaltyflow.netlify.app) | 🟢 Live |
-| ⚡ **Alternative Mirror (Cloudflare Pages)** | [https://royalty-flow.pages.dev](https://royalty-flow.pages.dev) | 🟢 Live |
+| 🚀 **Live dApp Link (Netlify / Cloudflare)** | [[https://royalty-distribution-system.netlify.app](https://royalty-distribution-system.netlify.app/)]| 🟢 Live |
 | 🐙 **Public GitHub Repository** | [https://github.com/prerana-techi/Stellar-Royalty-Distribution-System](https://github.com/prerana-techi/Stellar-Royalty-Distribution-System) | 🟢 Public |
 
 ---
