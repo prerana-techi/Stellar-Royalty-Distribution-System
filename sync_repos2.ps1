@@ -7,7 +7,7 @@ Set-Location $tempDir
 
 Write-Host "Cloning submission repo..."
 git clone https://github.com/prerana-techi/Stellar-Royalty-Distribution-System.git
-$submissionRepo = "STELLARLEND"
+$submissionRepo = "Stellar-Royalty-Distribution-System"
 
 Write-Host "Replacing contents with Royalty Distribution System..."
 Get-ChildItem -Path $submissionRepo -Force | Where-Object { $_.Name -ne '.git' } | Remove-Item -Recurse -Force

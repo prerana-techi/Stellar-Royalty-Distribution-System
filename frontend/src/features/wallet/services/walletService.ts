@@ -3,7 +3,10 @@ import { logger } from '@/shared/lib/logger';
 import {
   isConnected as freighterIsConnected,
   requestAccess as freighterRequestAccess,
+  setAllowed as freighterSetAllowed,
+  isAllowed as freighterIsAllowed,
   getAddress as freighterGetAddress,
+  getPublicKey as freighterGetPublicKey,
   signTransaction as freighterSignTransaction,
 } from '@stellar/freighter-api';
 
@@ -123,9 +126,10 @@ async function connectFreighter(): Promise<string> {
   // Small delay to let content script fully initialize after warm-up
   await new Promise(resolve => setTimeout(resolve, 500));
 
-  // ── Step 1: requestAccess() via @stellar/freighter-api ──
+  // ── Step 1: Grant permissions & call requestAccess() via @stellar/freighter-api ──
   try {
-    console.log('[Freighter] Step 1: Calling requestAccess()...');
+    console.log('[Freighter] Step 1: Setting allowed permissions and calling requestAccess()...');
+    try { await freighterSetAllowed(); } catch (e) { console.log('[Freighter] setAllowed non-fatal:', e); }
     const result = await withTimeout(freighterRequestAccess(), 30000, null);
     console.log('[Freighter] requestAccess() returned:', result);
 
