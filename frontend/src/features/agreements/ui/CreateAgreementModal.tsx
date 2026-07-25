@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { createAgreement } from '../services/registryService';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { submitTransaction } from '@/shared/lib/contracts';
@@ -33,6 +34,11 @@ export const CreateAgreementModal = ({
   ]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const totalBps = recipients.reduce((sum, r) => sum + r.share_bps, 0);
   const isSharesValid = totalBps === 10000;
@@ -163,11 +169,11 @@ export const CreateAgreementModal = ({
     onClose();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
       onClick={handleClose}
     >
       <div
@@ -389,6 +395,7 @@ export const CreateAgreementModal = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

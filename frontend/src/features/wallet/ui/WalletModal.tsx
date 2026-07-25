@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ExternalLink, CheckCircle2, AlertCircle } from 'lucide-react';
 import { WALLET_PROVIDERS, type SupportedWallet } from '../services/walletService';
 
@@ -38,6 +39,11 @@ const WALLET_META: Record<SupportedWallet, { gradient: string; description: stri
 export function WalletModal({ isOpen, onClose, onSelect, isConnecting, connectingWallet }: WalletModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [asyncAvailability, setAsyncAvailability] = useState<Record<string, boolean>>({});
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Asynchronously check wallet availability (e.g. Freighter via postMessage)
   useEffect(() => {
@@ -79,20 +85,20 @@ export function WalletModal({ isOpen, onClose, onSelect, isConnecting, connectin
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  return createPortal(
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-md animate-fade-in" />
+      <div className="fixed inset-0 bg-black/75 backdrop-blur-md animate-fade-in" />
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-md glass-card border border-white/10 shadow-2xl glow-purple overflow-hidden flex flex-col max-h-[85vh] my-auto z-10"
+        className="relative w-full max-w-md glass-card border border-white/10 shadow-2xl glow-purple overflow-hidden flex flex-col max-h-[85vh] z-10"
         style={{ animation: 'modal-slide-up 0.3s ease-out' }}
       >
         {/* Header */}
@@ -214,6 +220,7 @@ export function WalletModal({ isOpen, onClose, onSelect, isConnecting, connectin
           to { opacity: 1; }
         }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 }
