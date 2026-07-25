@@ -6,7 +6,7 @@ New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
 Set-Location $tempDir
 
 Write-Host "Cloning submission repo..."
-git clone https://github.com/ashishh-tech/STELLARLEND.git
+git clone https://github.com/prerana-techi/Stellar-Royalty-Distribution-System.git
 $submissionRepo = "STELLARLEND"
 
 Write-Host "Replacing contents with Royalty Distribution System..."
