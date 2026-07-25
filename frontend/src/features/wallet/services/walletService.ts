@@ -93,52 +93,69 @@ async function isFreighterAvailableAsync(): Promise<boolean> {
  * Connect to Freighter — called when user clicks the Freighter button.
  *
  * Strategy:
- *  1. Call requestAccess() directly (triggers Freighter popup).
- *     We skip the availability pre-check because:
- *     - The isConnected() postMessage can be unreliable/slow
- *     - requestAccess() itself will fail clearly if the extension is absent
- *     - If the extension IS installed, requesting access is the right action
+ *  0. Warm up: call isConnected() to wake the extension's content script
+ *  1. Call requestAccess() (triggers Freighter popup)
  *  2. If that returns an error, fall back to getAddress()
- *  3. Legacy window.freighter / window.stellar fallback as last resort
+ *  3. Try SEP-43 window.stellar API
+ *  4. Legacy window.freighter fallback as last resort
  */
 async function connectFreighter(): Promise<string> {
+  console.log('[Freighter] ── Initiating connection ──');
   logger.info('[Freighter] Initiating connection...');
 
-  // ── Step 1: Direct requestAccess() via @stellar/freighter-api ──
+  // ── Step 0: Warm up the extension content script ──
+  // The extension injects a content script that listens for postMessage.
+  // On first load, it may not be ready yet. Calling isConnected() wakes it up.
   try {
-    logger.info('[Freighter] Calling requestAccess()...');
-    const result = await withTimeout(freighterRequestAccess(), 15000, null);
+    console.log('[Freighter] Step 0: Warming up extension with isConnected()...');
+    const warmup = await withTimeout(freighterIsConnected(), 3000, null);
+    console.log('[Freighter] isConnected result:', warmup);
+
+    if (warmup === null) {
+      console.log('[Freighter] isConnected timed out — extension may not be ready, continuing anyway...');
+    } else {
+      console.log('[Freighter] Extension responded to isConnected — content script is alive');
+    }
+  } catch (e) {
+    console.log('[Freighter] isConnected threw (non-fatal):', e);
+  }
+
+  // Small delay to let content script fully initialize after warm-up
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  // ── Step 1: requestAccess() via @stellar/freighter-api ──
+  try {
+    console.log('[Freighter] Step 1: Calling requestAccess()...');
+    const result = await withTimeout(freighterRequestAccess(), 30000, null);
+    console.log('[Freighter] requestAccess() returned:', result);
 
     if (result === null) {
-      logger.warn('[Freighter] requestAccess() timed out');
-      // Fall through to getAddress
+      console.warn('[Freighter] requestAccess() timed out after 30s');
     } else {
-      logger.info('[Freighter] requestAccess() returned:', { result: JSON.stringify(result) });
-
+      // Handle v6 object response: { address: string, error?: string }
       if (result && typeof result === 'object') {
         if (result.error) {
           const errMsg = String(result.error);
-          logger.warn('[Freighter] requestAccess returned error field:', { error: errMsg });
+          console.warn('[Freighter] requestAccess returned error:', errMsg);
           if (/user declined|reject|cancel|denied/i.test(errMsg)) {
             throw new Error('You declined the connection request in Freighter.');
           }
-          // Don't throw yet for other errors — try getAddress fallback
         } else if (result.address && typeof result.address === 'string' && result.address.startsWith('G')) {
-          logger.info('[Freighter] Connected via requestAccess', { address: result.address });
+          console.log('[Freighter] ✅ Connected via requestAccess:', result.address);
           return result.address;
         }
       }
 
+      // Handle legacy string response
       if (typeof result === 'string' && (result as string).startsWith('G')) {
-        logger.info('[Freighter] Connected via requestAccess (string)', { address: result });
+        console.log('[Freighter] ✅ Connected via requestAccess (string):', result);
         return result as string;
       }
     }
   } catch (err: any) {
     const msg = String(err?.message || err || '');
-    logger.warn('[Freighter] requestAccess() threw:', { error: msg });
+    console.warn('[Freighter] requestAccess() threw:', msg);
 
-    // If user explicitly declined, don't retry
     if (/declined|reject|cancel|denied/i.test(msg)) {
       throw (err instanceof Error ? err : new Error(msg));
     }
@@ -146,37 +163,57 @@ async function connectFreighter(): Promise<string> {
 
   // ── Step 2: getAddress() fallback ──
   try {
-    logger.info('[Freighter] Trying getAddress()...');
+    console.log('[Freighter] Step 2: Trying getAddress()...');
     const result = await withTimeout(freighterGetAddress(), 10000, null);
+    console.log('[Freighter] getAddress() returned:', result);
 
-    if (result === null) {
-      logger.warn('[Freighter] getAddress() timed out');
-    } else {
-      logger.info('[Freighter] getAddress() returned:', { result: JSON.stringify(result) });
-
+    if (result !== null) {
       if (result && typeof result === 'object') {
         if (result.address && typeof result.address === 'string' && result.address.startsWith('G')) {
-          logger.info('[Freighter] Connected via getAddress', { address: result.address });
+          console.log('[Freighter] ✅ Connected via getAddress:', result.address);
           return result.address;
         }
       }
-
       if (typeof result === 'string' && (result as string).startsWith('G')) {
+        console.log('[Freighter] ✅ Connected via getAddress (string):', result);
         return result as string;
       }
     }
   } catch (err: any) {
-    logger.warn('[Freighter] getAddress() threw:', { error: err?.message });
+    console.warn('[Freighter] getAddress() threw:', err?.message);
   }
 
-  // ── Step 3: Legacy window.freighter / window.stellar fallback ──
+  // ── Step 3: SEP-43 window.stellar API ──
+  if (typeof window !== 'undefined' && (window as any).stellar) {
+    const stellar = (window as any).stellar;
+    console.log('[Freighter] Step 3: Found window.stellar (SEP-43), trying...');
+    try {
+      if (typeof stellar.requestAccess === 'function') {
+        const res = await stellar.requestAccess();
+        console.log('[Freighter] window.stellar.requestAccess returned:', res);
+        if (typeof res === 'string' && res.startsWith('G')) return res;
+        if (res?.address) return res.address;
+      }
+      if (typeof stellar.getAddress === 'function') {
+        const res = await stellar.getAddress();
+        console.log('[Freighter] window.stellar.getAddress returned:', res);
+        if (typeof res === 'string' && res.startsWith('G')) return res;
+        if (res?.address) return res.address;
+      }
+    } catch (e) {
+      console.warn('[Freighter] window.stellar API failed:', e);
+    }
+  }
+
+  // ── Step 4: Legacy window.freighter fallback ──
   if (typeof window !== 'undefined') {
-    const freighterGlobal = (window as any).freighter || (window as any).freighterApi || (window as any).Freighter || (window as any).stellar;
+    const freighterGlobal = (window as any).freighter || (window as any).freighterApi || (window as any).Freighter;
     if (freighterGlobal) {
-      logger.info('[Freighter] Trying legacy window global API...');
+      console.log('[Freighter] Step 4: Found window.freighter global, trying...');
       try {
         if (typeof freighterGlobal.requestAccess === 'function') {
           const res = await freighterGlobal.requestAccess();
+          console.log('[Freighter] window.freighter.requestAccess returned:', res);
           if (typeof res === 'string' && res.startsWith('G')) return res;
           if (res?.address) return res.address;
         }
@@ -195,11 +232,22 @@ async function connectFreighter(): Promise<string> {
     }
   }
 
+  // Log what globals are available for debugging
+  if (typeof window !== 'undefined') {
+    console.log('[Freighter] DEBUG — Available globals:', {
+      'window.freighter': !!(window as any).freighter,
+      'window.freighterApi': !!(window as any).freighterApi,
+      'window.Freighter': !!(window as any).Freighter,
+      'window.stellar': !!(window as any).stellar,
+    });
+  }
+
   throw new Error(
-    'Could not connect to Freighter. Please make sure:\n' +
-    '1. Freighter extension is installed in your browser and enabled\n' +
-    '2. Your Freighter wallet is unlocked (click the Freighter icon in your browser toolbar)\n' +
-    '3. Try clicking Connect again after unlocking'
+    'Could not connect to Freighter. Please try:\n' +
+    '1. Click the Freighter icon in your browser toolbar to unlock it\n' +
+    '2. Make sure Freighter is set to Testnet (Settings → Network → Test Net)\n' +
+    '3. Click "Connect Wallet" again after unlocking\n' +
+    '4. If it still fails, try refreshing the page first'
   );
 }
 
