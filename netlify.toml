@@ -1,10 +1,10 @@
 [build]
-  base = "frontend"
   command = "npm run build"
-  publish = "out"
+  publish = "frontend/out"
 
 [build.environment]
   NODE_VERSION = "20"
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
   NEXT_PUBLIC_STELLAR_NETWORK = "testnet"
   NEXT_PUBLIC_SOROBAN_RPC_URL = "https://soroban-testnet.stellar.org"
   NEXT_PUBLIC_HORIZON_URL = "https://horizon-testnet.stellar.org"
