@@ -13,6 +13,11 @@ interface WalletModalProps {
 }
 
 const WALLET_META: Record<SupportedWallet, { gradient: string; description: string; url: string }> = {
+  demo: {
+    gradient: 'from-emerald-500 to-teal-600',
+    description: '✅ Recommended — Instant 1-click connect, no extension needed',
+    url: '#',
+  },
   freighter: {
     gradient: 'from-indigo-500 to-purple-600',
     description: 'Popular Stellar browser extension wallet',
@@ -27,11 +32,6 @@ const WALLET_META: Record<SupportedWallet, { gradient: string; description: stri
     gradient: 'from-cyan-500 to-blue-600',
     description: 'Web-based Stellar signer — no extension needed',
     url: 'https://albedo.link',
-  },
-  demo: {
-    gradient: 'from-emerald-500 to-teal-600',
-    description: 'Instant Testnet Account — 1-click connect, no extension required',
-    url: '#',
   },
 };
 

@@ -278,6 +278,20 @@ export async function revalidateFreighterConnection(): Promise<string | null> {
 
 export const WALLET_PROVIDERS: WalletProvider[] = [
   {
+    name: 'Demo Testnet Account',
+    id: 'demo',
+    icon: '⚡',
+    isAvailable: () => true,
+    connect: async () => {
+      logger.info('[Demo Wallet] Connected demo testnet account');
+      return 'GBXGQJWVLWOYHFLVTKWV5FGHA3LNYR2RGC274UQ56N634N657I2NZLZE';
+    },
+    signTransaction: async (xdr: string) => {
+      logger.info('[Demo Wallet] Signed transaction (demo mode)');
+      return xdr;
+    },
+  },
+  {
     name: 'Freighter',
     id: 'freighter',
     icon: '🚀',
@@ -321,20 +335,6 @@ export const WALLET_PROVIDERS: WalletProvider[] = [
       if (!albedo) throw new Error('Albedo not available');
       const result = await albedo.tx({ xdr, network: NETWORK === 'testnet' ? 'testnet' : 'public' });
       return result.signed_envelope_xdr;
-    },
-  },
-  {
-    name: 'Demo Testnet Account',
-    id: 'demo',
-    icon: '⚡',
-    isAvailable: () => true,
-    connect: async () => {
-      logger.info('[Demo Wallet] Connected demo testnet account');
-      return 'GBXGQJWVLWOYHFLVTKWV5FGHA3LNYR2RGC274UQ56N634N657I2NZLZE';
-    },
-    signTransaction: async (xdr: string) => {
-      logger.info('[Demo Wallet] Signed transaction (demo mode)');
-      return xdr;
     },
   },
 ];
