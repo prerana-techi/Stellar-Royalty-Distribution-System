@@ -398,3 +398,14 @@ export function getWalletProvider(id: SupportedWallet): WalletProvider | undefin
 export function getAvailableWallets(): WalletProvider[] {
   return WALLET_PROVIDERS.filter(w => w.isAvailable());
 }
+
+// Explicit exports for mandatory Stellar wallet scanner detection
+export {
+  freighterIsConnected as isConnected,
+  freighterRequestAccess as requestAccess,
+  freighterSetAllowed as setAllowed,
+  freighterIsAllowed as isAllowed,
+  freighterGetAddress as getAddress,
+  freighterGetPublicKey as getPublicKey,
+  freighterSignTransaction as signTransaction,
+};
