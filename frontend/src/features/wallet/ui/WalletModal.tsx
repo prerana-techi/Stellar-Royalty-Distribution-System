@@ -84,22 +84,22 @@ export function WalletModal({ isOpen, onClose, onSelect, isConnecting, connectin
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto"
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" />
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-md animate-fade-in" />
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-md glass-card border border-white/10 shadow-2xl glow-purple overflow-hidden"
+        className="relative w-full max-w-md glass-card border border-white/10 shadow-2xl glow-purple overflow-hidden flex flex-col max-h-[85vh] my-auto z-10"
         style={{ animation: 'modal-slide-up 0.3s ease-out' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 pb-2">
+        <div className="flex items-center justify-between p-6 pb-3 border-b border-white/5 shrink-0">
           <div>
             <h2 className="text-xl font-bold">Connect Wallet</h2>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-0.5">
               Select a wallet to connect to RoyaltyFlow
             </p>
           </div>
@@ -113,7 +113,7 @@ export function WalletModal({ isOpen, onClose, onSelect, isConnecting, connectin
         </div>
 
         {/* Wallet List */}
-        <div className="p-6 pt-4 space-y-3" id="wallet-options-list">
+        <div className="p-6 space-y-3 overflow-y-auto max-h-[55vh] custom-scrollbar" id="wallet-options-list">
           {WALLET_PROVIDERS.map((provider, idx) => {
             const meta = WALLET_META[provider.id];
             const isAvailable = asyncAvailability[provider.id] ?? provider.isAvailable();
@@ -139,7 +139,7 @@ export function WalletModal({ isOpen, onClose, onSelect, isConnecting, connectin
                   <div className={`
                     w-12 h-12 rounded-xl bg-gradient-to-br ${meta.gradient}
                     flex items-center justify-center text-2xl
-                    shadow-lg group-hover:scale-105 transition-transform duration-200
+                    shadow-lg group-hover:scale-105 transition-transform duration-200 shrink-0
                   `}>
                     {provider.icon}
                   </div>
@@ -177,7 +177,7 @@ export function WalletModal({ isOpen, onClose, onSelect, isConnecting, connectin
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-6 pt-2">
+        <div className="px-6 pb-6 pt-3 border-t border-white/5 shrink-0 bg-black/20">
           <div className="flex items-start gap-2 p-3 rounded-lg bg-white/[0.02] border border-white/5">
             <AlertCircle className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground leading-relaxed">

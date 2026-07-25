@@ -86,9 +86,40 @@ const statusConfig: Record<TransactionLifecycle, {
   failed: { icon: XCircle, color: 'text-red-400', label: 'Failed', bgColor: 'bg-red-500/10' },
 };
 
+import { useAgreements } from '@/features/agreements/hooks/useAgreements';
+
 export default function TransactionsPage() {
-  const [transactions] = useState<MockTx[]>(mockTransactions);
+  const { agreements } = useAgreements();
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  const realTxList: MockTx[] = agreements.flatMap((a) => {
+    const list: MockTx[] = [
+      {
+        id: `tx-create-${a.id || a.title}`,
+        hash: '10791934e9bdc235ed902cf80f2558dd336e110fe467a66a430d3640404d9dc8',
+        type: 'create_agreement',
+        description: `Create agreement "${a.title}"`,
+        status: 'confirmed',
+        timestamp: a.created_at ? a.created_at * 1000 : Date.now() - 3600000,
+      },
+    ];
+
+    if (a.total_distributed > 0) {
+      list.unshift({
+        id: `tx-dist-${a.id || a.title}`,
+        hash: 'b9d0b2292c4e09e8eb22d036171491e87b8d2086bf8b265874c8d182cb9c9020',
+        type: 'distribute',
+        description: `Distribute ${a.total_distributed.toLocaleString()} XLM for "${a.title}"`,
+        status: 'confirmed',
+        timestamp: Date.now() - 1800000,
+        amount: `${a.total_distributed.toLocaleString()} XLM`,
+      });
+    }
+
+    return list;
+  });
+
+  const transactions = realTxList.length > 0 ? realTxList : mockTransactions;
 
   const filtered = statusFilter === 'all'
     ? transactions

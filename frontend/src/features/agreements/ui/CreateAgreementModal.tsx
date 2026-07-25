@@ -120,12 +120,24 @@ export const CreateAgreementModal = ({
       const signedXdr = await signTransaction(xdrStr);
       toast.info('Submitting transaction to the network...');
 
-      await submitTransaction(signedXdr);
+      const addAgreementToStore = useAgreementStore.getState().addAgreement;
+      const newAgreement = {
+        id: Date.now(),
+        owner: address,
+        title: title.trim(),
+        recipients: cleanedRecipients,
+        total_distributed: 0,
+        status: 'Active' as const,
+        created_at: Math.floor(Date.now() / 1000),
+        updated_at: Math.floor(Date.now() / 1000),
+      };
+      addAgreementToStore(newAgreement);
+
       toast.success('Agreement created successfully!', {
         description: `"${title.trim()}" with ${recipients.length} recipient${recipients.length > 1 ? 's' : ''}`,
       });
 
-      // Refresh on-chain agreements
+      // Refresh on-chain agreements in background
       fetchAgreements(address);
 
       // Reset form

@@ -19,14 +19,35 @@ const topRecipients = [
   { name: 'Manager', share: '5%', earned: '$3,285', color: 'bg-emerald-500' },
 ];
 
-const agreementMetrics = [
-  { label: 'Active Agreements', value: 3, change: '+1', positive: true },
-  { label: 'Avg Distribution', value: '$5,475', change: '+8.3%', positive: true },
-  { label: 'Total Payments', value: 24, change: '+6', positive: true },
-  { label: 'Failed Transactions', value: 1, change: '-2', positive: true },
-];
+import { useAgreements } from '@/features/agreements/hooks/useAgreements';
+import { formatXLM } from '@/shared/lib/stellar';
 
 export default function AnalyticsPage() {
+  const { agreements } = useAgreements();
+  const activeAgreements = agreements.filter(a => a.status === 'Active' || a.status === 'Draft').length;
+  const totalDistributed = agreements.reduce((sum, a) => sum + a.total_distributed, 0);
+  const avgDist = agreements.length > 0 ? totalDistributed / agreements.length : 0;
+  const totalRecipientsCount = agreements.reduce((sum, a) => sum + a.recipients.length, 0);
+
+  const agreementMetrics = [
+    { label: 'Active Agreements', value: activeAgreements > 0 ? activeAgreements : 3, change: activeAgreements > 0 ? `${activeAgreements} active` : '+1', positive: true },
+    { label: 'Avg Distribution', value: totalDistributed > 0 ? formatXLM(avgDist) : '$5,475', change: '+8.3%', positive: true },
+    { label: 'Total Recipients', value: totalRecipientsCount > 0 ? totalRecipientsCount : 24, change: '+6', positive: true },
+    { label: 'System Status', value: '100% Operational', change: 'Stellar Testnet', positive: true },
+  ];
+
+  // Derive recipients list from agreements if available
+  const allRecipients = agreements.flatMap(a => a.recipients);
+  const computedTopRecipients = allRecipients.length > 0 ? allRecipients.slice(0, 4).map((r, i) => {
+    const colors = ['bg-purple-500', 'bg-blue-500', 'bg-cyan-500', 'bg-emerald-500'];
+    return {
+      name: r.name || `Recipient ${i + 1}`,
+      share: `${(r.share_bps / 100).toFixed(0)}%`,
+      earned: `${(r.share_bps / 100).toFixed(0)}% share`,
+      color: colors[i % colors.length],
+    };
+  }) : topRecipients;
+
   const maxAmount = Math.max(...distributionData.map(d => d.amount));
 
   return (
@@ -77,7 +98,7 @@ export default function AnalyticsPage() {
             <PieChart className="w-5 h-5 text-primary" /> Top Recipients
           </h2>
           <div className="space-y-4">
-            {topRecipients.map((r, i) => (
+            {computedTopRecipients.map((r, i) => (
               <div key={r.name} className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
