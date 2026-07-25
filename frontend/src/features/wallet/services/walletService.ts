@@ -99,17 +99,15 @@ async function isFreighterAvailableAsync(): Promise<boolean> {
  *     - requestAccess() itself will fail clearly if the extension is absent
  *     - If the extension IS installed, requesting access is the right action
  *  2. If that returns an error, fall back to getAddress()
- *  3. Legacy window.freighter fallback as last resort
+ *  3. Legacy window.freighter / window.stellar fallback as last resort
  */
 async function connectFreighter(): Promise<string> {
-  // ── Step 1: requestAccess() via @stellar/freighter-api ──
+  logger.info('[Freighter] Initiating connection...');
+
+  // ── Step 1: Direct requestAccess() via @stellar/freighter-api ──
   try {
     logger.info('[Freighter] Calling requestAccess()...');
-    const result = await withTimeout(
-      freighterRequestAccess(),
-      15000,
-      null
-    );
+    const result = await withTimeout(freighterRequestAccess(), 15000, null);
 
     if (result === null) {
       logger.warn('[Freighter] requestAccess() timed out');
@@ -117,7 +115,6 @@ async function connectFreighter(): Promise<string> {
     } else {
       logger.info('[Freighter] requestAccess() returned:', { result: JSON.stringify(result) });
 
-      // v6 returns { address: string, error?: string }
       if (result && typeof result === 'object') {
         if (result.error) {
           const errMsg = String(result.error);
@@ -125,28 +122,26 @@ async function connectFreighter(): Promise<string> {
           if (/user declined|reject|cancel|denied/i.test(errMsg)) {
             throw new Error('You declined the connection request in Freighter.');
           }
-          // Don't throw yet — try getAddress fallback
-        } else if (result.address && typeof result.address === 'string') {
+          // Don't throw yet for other errors — try getAddress fallback
+        } else if (result.address && typeof result.address === 'string' && result.address.startsWith('G')) {
           logger.info('[Freighter] Connected via requestAccess', { address: result.address });
           return result.address;
         }
       }
 
-      // Older API might return a raw string
-      if (typeof result === 'string' && String(result).startsWith('G')) {
-        logger.info('[Freighter] Connected via requestAccess (string)', { address: String(result) });
-        return String(result);
+      if (typeof result === 'string' && (result as string).startsWith('G')) {
+        logger.info('[Freighter] Connected via requestAccess (string)', { address: result });
+        return result as string;
       }
     }
   } catch (err: any) {
-    const msg = String(err?.message || '');
+    const msg = String(err?.message || err || '');
     logger.warn('[Freighter] requestAccess() threw:', { error: msg });
 
     // If user explicitly declined, don't retry
     if (/declined|reject|cancel|denied/i.test(msg)) {
-      throw err;
+      throw (err instanceof Error ? err : new Error(msg));
     }
-    // Otherwise fall through to getAddress
   }
 
   // ── Step 2: getAddress() fallback ──
@@ -160,17 +155,14 @@ async function connectFreighter(): Promise<string> {
       logger.info('[Freighter] getAddress() returned:', { result: JSON.stringify(result) });
 
       if (result && typeof result === 'object') {
-        if (result.error) {
-          const errMsg = String(result.error);
-          logger.warn('[Freighter] getAddress returned error:', { error: errMsg });
-        } else if (result.address && typeof result.address === 'string') {
+        if (result.address && typeof result.address === 'string' && result.address.startsWith('G')) {
           logger.info('[Freighter] Connected via getAddress', { address: result.address });
           return result.address;
         }
       }
 
-      if (typeof result === 'string' && String(result).startsWith('G')) {
-        return String(result);
+      if (typeof result === 'string' && (result as string).startsWith('G')) {
+        return result as string;
       }
     }
   } catch (err: any) {
@@ -178,37 +170,36 @@ async function connectFreighter(): Promise<string> {
   }
 
   // ── Step 3: Legacy window.freighter / window.stellar fallback ──
-  const freighterGlobal = (typeof window !== 'undefined')
-    ? (window as any).freighter || (window as any).freighterApi || (window as any).stellar
-    : null;
+  if (typeof window !== 'undefined') {
+    const freighterGlobal = (window as any).freighter || (window as any).freighterApi || (window as any).Freighter || (window as any).stellar;
+    if (freighterGlobal) {
+      logger.info('[Freighter] Trying legacy window global API...');
+      try {
+        if (typeof freighterGlobal.requestAccess === 'function') {
+          const res = await freighterGlobal.requestAccess();
+          if (typeof res === 'string' && res.startsWith('G')) return res;
+          if (res?.address) return res.address;
+        }
+      } catch {}
 
-  if (freighterGlobal) {
-    logger.info('[Freighter] Trying legacy window global API...');
-    try {
-      if (typeof freighterGlobal.requestAccess === 'function') {
-        const res = await freighterGlobal.requestAccess();
-        if (typeof res === 'string' && res.startsWith('G')) return res;
-        if (res?.address) return res.address;
-      }
-    } catch {}
-
-    try {
-      if (typeof freighterGlobal.setAllowed === 'function') {
-        await freighterGlobal.setAllowed();
-      }
-      if (typeof freighterGlobal.getAddress === 'function') {
-        const res = await freighterGlobal.getAddress();
-        if (typeof res === 'string' && res.startsWith('G')) return res;
-        if (res?.address) return res.address;
-      }
-    } catch {}
+      try {
+        if (typeof freighterGlobal.setAllowed === 'function') {
+          await freighterGlobal.setAllowed();
+        }
+        if (typeof freighterGlobal.getAddress === 'function') {
+          const res = await freighterGlobal.getAddress();
+          if (typeof res === 'string' && res.startsWith('G')) return res;
+          if (res?.address) return res.address;
+        }
+      } catch {}
+    }
   }
 
   throw new Error(
     'Could not connect to Freighter. Please make sure:\n' +
-    '1. Freighter extension is installed and enabled\n' +
-    '2. You are logged in to Freighter\n' +
-    '3. Try clicking the Freighter icon in your toolbar first, then click Connect here'
+    '1. Freighter extension is installed in your browser and enabled\n' +
+    '2. Your Freighter wallet is unlocked (click the Freighter icon in your browser toolbar)\n' +
+    '3. Try clicking Connect again after unlocking'
   );
 }
 
@@ -257,12 +248,10 @@ export async function revalidateFreighterConnection(): Promise<string | null> {
     const connResult = await withTimeout(freighterIsConnected(), 3000, null);
     if (connResult === null) return null;
 
-    // v6 object shape
     if (connResult && typeof connResult === 'object' && !connResult.isConnected) {
       return null;
     }
 
-    // Extension is connected — get the active address
     const addrResult = await withTimeout(freighterGetAddress(), 3000, null);
     if (addrResult === null) return null;
 
@@ -342,4 +331,3 @@ export function getWalletProvider(id: SupportedWallet): WalletProvider | undefin
 export function getAvailableWallets(): WalletProvider[] {
   return WALLET_PROVIDERS.filter(w => w.isAvailable());
 }
-
