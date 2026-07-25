@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, ExternalLink, CheckCircle2, AlertCircle } from 'lucide-react';
 import { WALLET_PROVIDERS, type SupportedWallet } from '../services/walletService';
 
@@ -32,6 +32,27 @@ const WALLET_META: Record<SupportedWallet, { gradient: string; description: stri
 
 export function WalletModal({ isOpen, onClose, onSelect, isConnecting, connectingWallet }: WalletModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const [asyncAvailability, setAsyncAvailability] = useState<Record<string, boolean>>({});
+
+  // Asynchronously check wallet availability (e.g. Freighter via postMessage)
+  useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+
+    WALLET_PROVIDERS.forEach(async (provider) => {
+      let available = provider.isAvailable();
+      if (!available && provider.isAvailableAsync) {
+        try {
+          available = await provider.isAvailableAsync();
+        } catch {}
+      }
+      if (active) {
+        setAsyncAvailability((prev) => ({ ...prev, [provider.id]: available }));
+      }
+    });
+
+    return () => { active = false; };
+  }, [isOpen]);
 
   // Close on Escape key
   useEffect(() => {
@@ -90,7 +111,7 @@ export function WalletModal({ isOpen, onClose, onSelect, isConnecting, connectin
         <div className="p-6 pt-4 space-y-3" id="wallet-options-list">
           {WALLET_PROVIDERS.map((provider, idx) => {
             const meta = WALLET_META[provider.id];
-            const isAvailable = provider.isAvailable();
+            const isAvailable = asyncAvailability[provider.id] ?? provider.isAvailable();
             const isCurrentlyConnecting = isConnecting && connectingWallet === provider.id;
 
             return (
