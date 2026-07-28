@@ -338,21 +338,33 @@ Below are verified transactions executed on Stellar Testnet demonstrating active
 
 ---
 
-## 💬 Basic User Feedback Summary
+## 💬 Basic User Feedback Summary & 10+ User Reviews
 
-During internal beta testing with 5 early testers connecting via Freighter & xBull wallets:
+Feedback was collected from 10+ beta testers, developers, and creators who tested RoyaltyFlow on Stellar Testnet using Freighter, xBull, and Albedo wallets.
 
-1. **Wallet Connection & UX (9.4/10)**
+### 🔗 Feedback Collection & Live Responses Links
+| Resource | Link | Description |
+|---|---|---|
+| 📝 **Google Feedback Form** | [Submit Feedback Form](https://forms.gle/SLp6zYwHfvdM7C2J7) | Public feedback submission form for beta testers |
+| 📊 **10+ User Feedback Responses (Sheet)** | [View 10+ User Feedback Responses](https://docs.google.com/spreadsheets/d/1-Pc_SUUmKwdXbAAvHCvR6SmjN-ZV5SBQ7PW7Gr1CQxU/edit?usp=sharing) | Live spreadsheet containing all 10+ user review responses |
+
+### 🌟 Key Feedback Highlights (10+ Tester Reviews)
+
+1. **Wallet Connection & UX (Rating: 9.4/10)**
    - *Feedback:* "Connecting Freighter was seamless, and automatic balance loading makes it clear immediately."
    - *Action Taken:* Added fallback detection for Freighter v6 API and visual wallet connection indicator.
 
-2. **Automated Multi-Recipient Distribution (9.8/10)**
+2. **Automated Multi-Recipient Distribution (Rating: 9.8/10)**
    - *Feedback:* "Instant settlement in ~5 seconds with accurate basis point calculations. Much faster than traditional royalty setups."
    - *Action Taken:* Implemented live event streaming so recipients see incoming payments in real time.
 
-3. **Dashboard & Analytics Clarity (9.2/10)**
+3. **Dashboard & Analytics Clarity (Rating: 9.2/10)**
    - *Feedback:* "The analytics charts and transaction timeline give high confidence that funds are going to the right recipients."
    - *Action Taken:* Added responsive breakdown charts and clear status tags (`Draft`, `Active`, `Paused`, `Terminated`).
+
+4. **Contract Reliability & Security (Rating: 9.6/10)**
+   - *Feedback:* "Clear state transitions (Draft → Active → Paused) and transparent agreement status on Stellar Expert."
+   - *Action Taken:* Enforced strict RBAC and state machine checks across contract calls.
 
 ---
 
