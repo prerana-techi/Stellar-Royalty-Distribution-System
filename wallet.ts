@@ -4,9 +4,10 @@ import {
   setAllowed,
   isAllowed,
   getAddress,
-  getPublicKey,
   signTransaction,
 } from '@stellar/freighter-api';
+
+const getPublicKey = getAddress;
 
 /**
  * Root Stellar Wallet Integration Module

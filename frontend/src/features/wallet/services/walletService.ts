@@ -6,7 +6,6 @@ import {
   setAllowed as freighterSetAllowed,
   isAllowed as freighterIsAllowed,
   getAddress as freighterGetAddress,
-  getPublicKey as freighterGetPublicKey,
   signTransaction as freighterSignTransaction,
 } from '@stellar/freighter-api';
 
@@ -221,7 +220,7 @@ async function connectFreighter(): Promise<string> {
           if (typeof res === 'string' && res.startsWith('G')) return res;
           if (res?.address) return res.address;
         }
-      } catch {}
+      } catch { }
 
       try {
         if (typeof freighterGlobal.setAllowed === 'function') {
@@ -232,7 +231,7 @@ async function connectFreighter(): Promise<string> {
           if (typeof res === 'string' && res.startsWith('G')) return res;
           if (res?.address) return res.address;
         }
-      } catch {}
+      } catch { }
     }
   }
 
@@ -406,6 +405,6 @@ export {
   freighterSetAllowed as setAllowed,
   freighterIsAllowed as isAllowed,
   freighterGetAddress as getAddress,
-  freighterGetPublicKey as getPublicKey,
+  freighterGetAddress as getPublicKey,
   freighterSignTransaction as signTransaction,
 };

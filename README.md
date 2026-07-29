@@ -285,14 +285,14 @@ Key practices:
 | Resource | Link / URL | Status |
 |---|---|---|
 | 🚀 **Live dApp Link (Netlify / Cloudflare)** | [https://royalty-distribution-system.netlify.app](https://royalty-distribution-system.netlify.app/) | 🟢 Live |
-| 📊 **Level 5 Pitch Deck (PowerPoint)** | [Download Pitch Deck (PPTX)](./RoyaltyFlow_Level4_Pitch.pptx) | 🟢 Available |
+| 📊 **Level 5 Pitch Deck (PowerPoint)** | [Download Pitch Deck (PPTX)](./RoyaltyFlow_Level5_Pitch.pptx) | 🟢 Available |
 | 🐙 **Public GitHub Repository** | [https://github.com/prerana-techi/Stellar-Royalty-Distribution-System](https://github.com/prerana-techi/Stellar-Royalty-Distribution-System) | 🟢 Public |
 
 ---
 
 ## 📊 Presentation Deck (Level 5 Submission)
 
-- 📑 **Pitch Deck Presentation:** [`RoyaltyFlow_Level4_Pitch.pptx`](./RoyaltyFlow_Level4_Pitch.pptx) (Also available in [`docs/RoyaltyFlow_Level4_Pitch.pptx`](./docs/RoyaltyFlow_Level4_Pitch.pptx))
+- 📑 **Pitch Deck Presentation:** [`RoyaltyFlow_Level5_Pitch.pptx`](./RoyaltyFlow_Level5_Pitch.pptx) (Also available in [`docs/RoyaltyFlow_Level5_Pitch.pptx`](./docs/RoyaltyFlow_Level5_Pitch.pptx))
 - 🎯 **Contents:** Problem statement, solution architecture, inter-contract communication flow, Stellar Testnet contract deployment addresses, mobile responsive UI showcase, live demo link, and growth roadmap.
 
 ---
